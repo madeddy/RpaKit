@@ -120,6 +120,7 @@ class RPAKit(RKCommon):
         self.header = ''
         self.version = {}
         self.reg = {}
+        self.dep_initstate = None
 
 
     def extract_data(self, file_pt, file_data):
@@ -214,11 +215,14 @@ class RPAKit(RKCommon):
         return magic
 
     def guess_version(self):
-        """Determines archive version from header or suffix and pairs
-         alias variants with a main format id."""
-
-        bogus = False
         self.version = {}  # reset or weird files slip in and error
+        """
+        Determines archive version from header or suffix and pairs alias variants
+        with a main format id.
+        """
+        # HACK:We reset both or the val from last depot is still there. Weird files
+        # slip in and error
+        self.dep_initstate = None
         magic = self.get_header_start()
         try:
             for key, val in self.rpaformats.items():
@@ -226,6 +230,8 @@ class RPAKit(RKCommon):
                     self.version = val
 
             elif not self.version:
+            # # NOTE:If no version is found the dict is empty; searching with a key
+            # slice for 'rpaid' excepts a KeyError (better init dict with key?)
             if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
                 self._version = {}
                 raise ValueError
@@ -239,7 +245,7 @@ class RPAKit(RKCommon):
         except LookupError:
             raise "There was some problem with the key of the archive..."
         else:
-        return bogus
+            self.dep_initstate = True
 
     def collect_header(self):
         """Opens file and reads header line in."""
@@ -287,10 +293,16 @@ class RPAKit(RKCommon):
         """Initializes depot files to a ready state for further operations."""
         try:
             self.collect_header()
-            bogus_archive = self.guess_version()
-            if bogus_archive:
-                self.inf(1, f"Skipping bogus archive: {self._strify(self.depot)}")
+            self.guess_version()
+
+            if 'alias' in self._version.keys():
+                self.inf(2, "Unofficial RPA found.")
             else:
+                self.inf(2, "Official RPA found.")
+
+            if self.dep_initstate is False:
+                self.inf(0, f"Skipping bogus archive: {self._strify(self.depot)}", m_sort='note')
+            elif self.dep_initstate is True:
                 self.get_version_specs()
                 self.collect_register()
                 self.reg = {self._unicify(
@@ -373,7 +385,7 @@ class RPAPathwork(RKCommon):
             self.inf(1, f"{self.count['dep_found']} RPA files to process:\n"
                      f"{chr(10).join([*map(str, self.dep_dq)])}", m_sort='raw')
         else:
-            self.inf(1, "No RPA files found.")
+            self.inf(1, "No RPA files found. Was the correct path given?")
 
 
 class RKmain(RPAPathwork, RPAKit):
@@ -418,6 +430,9 @@ class RKmain(RPAPathwork, RPAKit):
             except OSError as err:
                 raise Exception(f"{err}: Error while opening archive file " \
                                 f"< {self.depot} > for initialization.")
+
+            if self.dep_initstate is False:
+                continue
 
             if self.task == 'exp':
                 self.unpack_depot()
