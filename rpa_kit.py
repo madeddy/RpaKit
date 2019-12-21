@@ -6,8 +6,7 @@ and uncompresses the content in a new subdirectory. Listing without writing
 or testing the archiv is also possible.
 """
 
-# pylint:disable=c0301, w0612, r0902, w0511, r0903
-
+# pylint:disable=c0301, w0612, r0902, w0511, r0903, c0116
 
 import os
 import sys
@@ -23,7 +22,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.19.0-alpha'
+__version__ = '0.20.0-alpha'
 
 
 class RKCommon:
@@ -38,13 +37,13 @@ class RKCommon:
         return f"{self.__class__.__name__}({self.name!r})"
 
     @classmethod
-    def _utfify(cls, data):
+    def utfify(cls, data):
         if isinstance(data, str):
             return data
         return data.decode("utf-8")
 
     @classmethod
-    def _strify(cls, data):
+    def strify(cls, data):
         return str(data)
 
     @classmethod
@@ -129,7 +128,7 @@ class RPAKit(RKCommon):
         if pt(self.depot).suffix == '.rpi':
             self.depot = pt(self.depot).with_suffix('.rpa')
 
-        with open(self.depot, "rb") as ofi:
+        with pt(self.depot).open('rb') as ofi:
             if len(self._reg[file_pt]) == 1:
                 ofs, lng, pre = file_data[0]
                 ofi.seek(ofs)
@@ -158,7 +157,8 @@ class RPAKit(RKCommon):
 
     def get_cipher(self):
         """Fetches the cipher for the register from the header infos."""
-
+        # NOTE: Slicing is error prone; perhaps use of "split to parts" as fallback
+        # in they exceptions is thing; or even reverse the order of this methods then
         offset, key = 0, None
         try:
             slos, slky = self._version['offset'], self._version['key']
@@ -182,8 +182,7 @@ class RPAKit(RKCommon):
 
         with pt(self.depot).open('rb') as ofi:
             ofi.seek(offset)
-            self._reg = pickle.loads(
-                zlib.decompress(ofi.read()), encoding='bytes')
+            self._reg = pickle.loads(zlib.decompress(ofi.read()), encoding='bytes')
 
         self.unify_reg()
         if key is not None:
@@ -199,18 +198,21 @@ class RPAKit(RKCommon):
                     self._version.update(val)
                     break
         except KeyError:
-            raise f"Error while aquiring version spezifications for {self.depot}."
+            raise f"Error while aquiring version specifications for {self.depot}."
 
     def get_header_start(self):
         """Reads the header start in and decodes to string."""
         try:
             magic = self._header[:12].decode()
-        except UnicodeError:
+        except UnicodeDecodeError:
             self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.", m_sort='note')
-            # FIXME: Needs to be twice catched for rpa1 type and weirdo files
+            # FIXME: Ugly code; needs improvement
+            # Needs to be twice catched for rpa1 type and weirdo files
             try:
                 magic = self._header[:1].decode()
             except UnicodeError:
+                self.inf(0, "UnicodeError: Header unreadable. Tested file is " \
+                         "perhabs no RPA or very weird.", m_sort='warn')
                 magic = ''
         return magic
 
@@ -228,7 +230,7 @@ class RPAKit(RKCommon):
             for key, val in self._rpaformats.items():
                 if key in magic:
                     self._version = val
-            # # NOTE:If no version is found the dict is empty; searching with a key
+            # NOTE:If no version is found the dict is empty; searching with a key
             # slice for 'rpaid' excepts a KeyError (better init dict with key?)
             if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
                 self._version = {}
@@ -238,7 +240,7 @@ class RPAKit(RKCommon):
                 raise NotImplementedError
 
         except (ValueError, NotImplementedError):
-            self.inf(0, f"\"{self.depot}\" is not a Ren\'Py archive or a unsupported" \
+            self.inf(0, f"\"{self.depot}\" is not a Ren\'Py archive or a unsupported " \
                      f"variation.\nFound archive header: <{self._header}>", m_sort='warn')
             self.dep_initstate = False
         except LookupError:
@@ -271,7 +273,7 @@ class RPAKit(RKCommon):
         self.count['dep_done'] += 1
         if any(pt(self.out_pt).iterdir()):
             self.inf(2, f"Unpacked {self.count['fle_total']} files from archive: " \
-                     f"{self._strify(self.depot)}")
+                     f"{self.strify(self.depot)}")
         else:
             self.inf(2, "No files from archive unpacked.")
 
@@ -280,7 +282,7 @@ class RPAKit(RKCommon):
         self.inf(2, "Listing archive files:")
         for item in sorted(self._reg.keys()):
             print(f"{item}")
-        self.inf(1, f"Archive {self._strify(pt(self.depot).name)} holds " \
+        self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
                  f"{len(self._reg.keys())} files.")
 
     def test_depot(self):
@@ -300,13 +302,13 @@ class RPAKit(RKCommon):
                 self.inf(2, "Official RPA found.")
 
             if self.dep_initstate is False:
-                self.inf(0, f"Skipping bogus archive: {self._strify(self.depot)}", m_sort='note')
+                self.inf(0, f"Skipping bogus archive: {self.strify(self.depot)}", m_sort='note')
             elif self.dep_initstate is True:
                 self.get_version_specs()
                 self.collect_register()
-                self._reg = {self._utfify(_pt): _d for _pt, _d in self._reg.items()}
+                self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
                 self.count['fle_total'] = len(self._reg)
-        except BaseException:
+        except Exception:
             raise Exception("Unknown error while reading depot in.")
 
 
@@ -374,7 +376,7 @@ class RPAPathwork(RKCommon):
         except Exception as err:  # pylint:disable=w0703
             print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
 
-        if  self.outdir is None:
+        if self.outdir is None:
             self.outdir = 'rpakit_out'
         self.out_pt = pt(self._inp_pt) /  self.outdir
         self.make_dirstruct(self.out_pt)
@@ -440,7 +442,7 @@ class RKmain(RPAPathwork, RPAKit):
             elif self.task == 'tst':
                 self.test_depot()
 
-            self.inf(1, f"[{self.count['dep_done'] / float(self.count['dep_found']):05.1%}] {self._strify(self.depot):>4}")
+            self.inf(1, f"[{self.count['dep_done'] / float(self.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
 
         if self.task == 'exp' and self.count['dep_done'] > 0:
             self.inf(0, f" Done. We unpacked {self.count['dep_done']} archive(s).")
@@ -465,7 +467,8 @@ def parse_args():
         """Helper function to determine if a task is choosen."""
         if not args.task:
             aps.print_help()
-            raise OSError(f"\nNo task requested; either -e, -l or -t is required.")
+            raise argparse.ArgumentError(args.task, f"\nNo task requested; " \
+                                         "either -e, -l or -t is required.")
 
     desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
     rpa_kit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
