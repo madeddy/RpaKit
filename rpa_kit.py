@@ -48,22 +48,27 @@ class RKCommon:
         return str(data)
 
     @classmethod
-    def inf(cls, inf_level, msg, warn=False):
+    def inf(cls, inf_level, msg, m_sort=None):
         """Outputs by the current verboseness level allowed infos."""
         if cls.verbosity >= inf_level:  # self.tty ?
-            msg_sort = 'INFO'
-            indent2 = " " * 16
-            if warn:
-                msg_sort = 'WARNING'
-                indent2 = " " * 20
-            msg_wrap = textwrap.fill(msg, width=90, initial_indent=f"{__title__}: {msg_sort} > ", subsequent_indent=indent2)
-            print(msg_wrap)
+            ind1 = f"{cls.name}: > "
+            ind2 = " " * 12
+            if m_sort == 'note':
+                ind1 = f"{cls.name}:\x1b[93m NOTE \x1b[0m> "
+                ind2 = " " * 16
+            elif m_sort == 'warn':
+                ind1 = f"{cls.name}:\x1b[31m WARNING \x1b[0m> "
+                ind2 = " " * 20
+            elif m_sort == 'raw':
+                print(ind1, msg)
+                return
+            print(textwrap.fill(msg, width=90, initial_indent=ind1, subsequent_indent=ind2))
 
     @classmethod
     def make_dirstruct(cls, dst):
         """Constructs needet output directorys if they not already exist."""
         if not pt(dst).exists():
-            cls.inf(2, f'Creating directory structure: {dst}')
+            cls.inf(2, f"Creating directory structure for: {dst}")
             pt(dst).mkdir(parents=True, exist_ok=True)
 
 
