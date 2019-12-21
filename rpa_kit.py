@@ -78,27 +78,41 @@ class RPAKit(RKCommon):
     (depot, output path) are internaly providet.
     """
 
-    rpaformats = {'RPA-2.0 ': {'rpaid': 'rpa2'},
-                  'RPA-3.0 ': {'rpaid': 'rpa3'},
-                  'RPI-3.0': {'rpaid': 'rpa32', 'alias': 'rpi3'},
-                  'RPA-3.1': {'rpaid': 'rpa3', 'alias': 'rpa31'},
-                  'RPA-3.2': {'rpaid': 'rpa32'},
-                  'RPA-4.0': {'rpaid': 'rpa3', 'alias': 'rpa4'},
-                  'ALT-1.0': {'rpaid': 'alt1'},
-                  'ZiX-12A': {'rpaid': 'zix12a'},
-                  'ZiX-12B': {'rpaid': 'zix12b'}}
+    _rpaformats = {'x': {'rpaid': 'rpa1',
+                         'desc': 'RPA-1.0'},
+                   'RPA-2.0 ': {'rpaid': 'rpa2',
+                                'desc': 'RPA-2.0'},
+                   'RPA-3.0 ': {'rpaid': 'rpa3',
+                                'desc': 'RPA-3.0'},
+                   'RPI-3.0': {'rpaid': 'rpa32',
+                               'alias': 'rpi3',
+                               'desc': 'RPI-3.0'},
+                   'RPA-3.1': {'rpaid': 'rpa3',
+                               'alias': 'rpa31',
+                               'desc': 'RPA-3.1'},
+                   'RPA-3.2': {'rpaid': 'rpa32',
+                               'desc': 'RPA-3.2'},
+                   'RPA-4.0': {'rpaid': 'rpa3',
+                               'alias': 'rpa4',
+                               'desc': 'RPA-4.0'},
+                   'ALT-1.0': {'rpaid': 'alt1',
+                               'desc': 'ALT-1.0'},
+                   'ZiX-12A': {'rpaid': 'zix12a',
+                               'desc': 'ZiX-12A'},
+                   'ZiX-12B': {'rpaid': 'zix12b',
+                               'desc': 'ZiX-12B'}}
 
-    rpaspecs = {'rpa1': {'offset': 0,
-                         'key': None},
-                'rpa2': {'offset': slice(8, None),
-                         'key': None},
-                'rpa3': {'offset': slice(8, 24),
-                         'key': slice(25, 33)},
-                'rpa32': {'offset': slice(8, 24),
-                          'key': slice(27, 35)},
-                'alt1': {'offset': slice(17, 33),
-                         'key': slice(8, 16),
-                         'key2': 0xDABE8DF0}}
+    _rpaspecs = {'rpa1': {'offset': 0,
+                          'key': None},
+                 'rpa2': {'offset': slice(8, None),
+                          'key': None},
+                 'rpa3': {'offset': slice(8, 24),
+                          'key': slice(25, 33)},
+                 'rpa32': {'offset': slice(8, 24),
+                           'key': slice(27, 35)},
+                 'alt1': {'offset': slice(17, 33),
+                          'key': slice(8, 16),
+                          'key2': 0xDABE8DF0}}
 
     def __init__(self):
         super().__init__()
@@ -189,10 +203,14 @@ class RPAKit(RKCommon):
     def get_header_start(self):
         """Reads the header start in and decodes to string."""
         try:
-            magic = self.header[:12].decode()
-        except UnicodeDecodeError:
-            magic = ''
-            self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.")
+            magic = self._header[:12].decode()
+        except UnicodeError:
+            self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.", m_sort='note')
+            # FIXME: Needs to be twice catched for rpa1 type and weirdo files
+            try:
+                magic = self._header[:1].decode()
+            except UnicodeError:
+                magic = ''
         return magic
 
     def guess_version(self):
@@ -207,9 +225,9 @@ class RPAKit(RKCommon):
                 if key in magic:
                     self.version = val
 
-            if not self.version and pt(self.depot).suffix == '.rpi':
-                self.version = {'rpaid': 'rpa1'}
             elif not self.version:
+            if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
+                self._version = {}
                 raise ValueError
             elif 'zix12a' in self.version.values() or 'zix12b' in self.version.values():
                 raise NotImplementedError
@@ -219,13 +237,8 @@ class RPAKit(RKCommon):
                      f"variation.\nFound archive header: <{self._header}>", m_sort='warn')
             self.dep_initstate = False
         except LookupError:
-            print("There was some problem with the key of the archive...")
-
-        if 'alias' in self.version.keys():
-            self.inf(2, "Unofficial RPA found.")
+            raise "There was some problem with the key of the archive..."
         else:
-            self.inf(2, "Official RPA found.")
-
         return bogus
 
     def collect_header(self):
@@ -303,7 +316,7 @@ class RPAPathwork(RKCommon):
         self.outdir = None
 
     def ident_paired_rpa(self):
-        """Identifys paired archives in the deque."""
+        """Identifys rpa1 type paired archives and removes one from the deque."""
         dq_copy = self.dep_dq
         for entry in list(dq_copy):
             if pt(entry).suffix == '.rpi':
@@ -314,7 +327,7 @@ class RPAPathwork(RKCommon):
 
     @staticmethod
     def valid_archives(entry):
-        """Checks path pbjects for identity by extension."""
+        """Checks path objects for identity by extension. RPA have no real magic num."""
         return bool(pt(entry).is_file() and pt(entry).suffix
                     in ['.rpa', '.rpi', '.rpc'])
 
