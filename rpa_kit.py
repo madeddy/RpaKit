@@ -23,7 +23,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.16.0-alpha'
+__version__ = '0.19.0-alpha'
 
 
 class RKCommon:
@@ -31,14 +31,14 @@ class RKCommon:
     verbosity = 1
     count = Counter({'dep_found': 0, 'dep_done': 0, 'fle_total': 0})
     out_pt = ''
-    name = "RPA Kit"
+    name = 'RPAKit'
 
 
     def __str__(self):
-        return f"{self.__class__.__name__}("f"{self.name!r})"
+        return f"{self.__class__.__name__}({self.name!r})"
 
     @classmethod
-    def _unicify(cls, data):
+    def _utfify(cls, data):
         if isinstance(data, str):
             return data
         return data.decode("utf-8")
@@ -117,9 +117,9 @@ class RPAKit(RKCommon):
     def __init__(self):
         super().__init__()
         self.depot = ''
-        self.header = ''
-        self.version = {}
-        self.reg = {}
+        self._header = ''
+        self._version = {}
+        self._reg = {}
         self.dep_initstate = None
 
 
@@ -130,7 +130,7 @@ class RPAKit(RKCommon):
             self.depot = pt(self.depot).with_suffix('.rpa')
 
         with open(self.depot, "rb") as ofi:
-            if len(self.reg[file_pt]) == 1:
+            if len(self._reg[file_pt]) == 1:
                 ofs, lng, pre = file_data[0]
                 ofi.seek(ofs)
                 tmp_file = pre + ofi.read(lng - len(pre))
@@ -145,27 +145,27 @@ class RPAKit(RKCommon):
 
     def unscrample_reg(self, key):
         """Unscrambles the archive register."""
-
-        for _kv in self.reg:
-            self.reg[_kv] = [(ofs ^ key, lng ^ key, pre)
-                             for ofs, lng, pre in self.reg[_kv]]
+        for _kv in self._reg:
+            self._reg[_kv] = [(ofs ^ key, lng ^ key, pre)
+                              for ofs, lng, pre in self._reg[_kv]]
 
     def unify_reg(self):
         """Arrange the register in common form."""
-        for val in self.reg.values():
+        for val in self._reg.values():
             if len(val[0]) == 2:
                 for num, _ in enumerate(val):
                     val[num] += (b'',)
 
     def get_cipher(self):
         """Fetches the cipher for the register from the header infos."""
+
         offset, key = 0, None
         try:
-            slos, slky = self.version['offset'], self.version['key']
-            if self.version['rpaid'] != 'rpa1':
-                offset = int(self.header[slos], 16)
-                if self.version['rpaid'] != 'rpa2':
-                    key = int(self.header[slky], 16)
+            slos, slky = self._version['offset'], self._version['key']
+            if self._version['rpaid'] != 'rpa1':
+                offset = int(self._header[slos], 16)
+                if self._version['rpaid'] != 'rpa2':
+                    key = int(self._header[slky], 16)
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
             raise f"{err}: Problem with the format data encountered. Perhabs " \
@@ -182,21 +182,21 @@ class RPAKit(RKCommon):
 
         with pt(self.depot).open('rb') as ofi:
             ofi.seek(offset)
-            self.reg = pickle.loads(
+            self._reg = pickle.loads(
                 zlib.decompress(ofi.read()), encoding='bytes')
 
         self.unify_reg()
         if key is not None:
-            if 'key2' in self.version.keys():
-                key = key ^ self.version['key2']
+            if 'key2' in self._version.keys():
+                key = key ^ self._version['key2']
             self.unscrample_reg(key)
 
     def get_version_specs(self):
         """Yields for the given archive version the cipher data."""
         try:
-            for key, val in self.rpaspecs.items():
-                if key == self.version['rpaid']:
-                    self.version.update(val)
+            for key, val in self._rpaspecs.items():
+                if key == self._version['rpaid']:
+                    self._version.update(val)
                     break
         except KeyError:
             raise f"Error while aquiring version spezifications for {self.depot}."
@@ -215,7 +215,6 @@ class RPAKit(RKCommon):
         return magic
 
     def guess_version(self):
-        self.version = {}  # reset or weird files slip in and error
         """
         Determines archive version from header or suffix and pairs alias variants
         with a main format id.
@@ -223,19 +222,19 @@ class RPAKit(RKCommon):
         # HACK:We reset both or the val from last depot is still there. Weird files
         # slip in and error
         self.dep_initstate = None
+        self._version = {}
         magic = self.get_header_start()
         try:
-            for key, val in self.rpaformats.items():
+            for key, val in self._rpaformats.items():
                 if key in magic:
-                    self.version = val
-
-            elif not self.version:
+                    self._version = val
             # # NOTE:If no version is found the dict is empty; searching with a key
             # slice for 'rpaid' excepts a KeyError (better init dict with key?)
             if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
                 self._version = {}
+            elif not self._version:
                 raise ValueError
-            elif 'zix12a' in self.version.values() or 'zix12b' in self.version.values():
+            elif 'zix12a' in self._version.values() or 'zix12b' in self._version.values():
                 raise NotImplementedError
 
         except (ValueError, NotImplementedError):
@@ -251,12 +250,12 @@ class RPAKit(RKCommon):
         """Opens file and reads header line in."""
         with pt(self.depot).open('rb') as ofi:
             ofi.seek(0)
-            self.header = ofi.readline()
+            self._header = ofi.readline()
 
     def unpack_depot(self):
         """Manages the unpacking of the depot files."""
 
-        for file_num, (file_pt, file_data) in enumerate(self.reg.items()):
+        for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
             try:
                 self.make_dirstruct(pt(self.out_pt) / pt(file_pt).parent)
 
@@ -267,7 +266,7 @@ class RPAKit(RKCommon):
                 with pt(self.out_pt / file_pt).open('wb') as ofi:
                     ofi.write(tmp_file)
             except TypeError as err:
-                raise Exception(f"{err}: Unknown error while trying to extract a file.")
+                raise f"{err}: Unknown error while trying to extract a file."
 
         self.count['dep_done'] += 1
         if any(pt(self.out_pt).iterdir()):
@@ -279,7 +278,7 @@ class RPAKit(RKCommon):
     def show_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
         self.inf(2, "Listing archive files:")
-        for item in sorted(self.reg.keys()):
+        for item in sorted(self._reg.keys()):
             print(f"{item}")
         self.inf(1, f"Archive {self._strify(pt(self.depot).name)} holds " \
                  f"{len(self._reg.keys())} files.")
@@ -305,9 +304,8 @@ class RPAKit(RKCommon):
             elif self.dep_initstate is True:
                 self.get_version_specs()
                 self.collect_register()
-                self.reg = {self._unicify(
-                    _pt): _d for _pt, _d in self.reg.items()}
-                self.count['fle_total'] = len(self.reg)
+                self._reg = {self._utfify(_pt): _d for _pt, _d in self._reg.items()}
+                self.count['fle_total'] = len(self._reg)
         except BaseException:
             raise Exception("Unknown error while reading depot in.")
 
@@ -323,7 +321,7 @@ class RPAPathwork(RKCommon):
     def __init__(self):
         super().__init__()
         self.dep_dq = deque()
-        self.inp_pt = None
+        self._inp_pt = None
         self.raw_inp = None
         self.outdir = None
 
@@ -344,8 +342,8 @@ class RPAPathwork(RKCommon):
                     in ['.rpa', '.rpi', '.rpc'])
 
     def search_rpa(self):
-        """Searches RPA files in given directory."""
-        for entry in os.scandir(self.inp_pt):
+        """Searches RPA files in given directory and adds them to the deque."""
+        for entry in os.scandir(self._inp_pt):
             if self.valid_archives(entry):
                 self.dep_dq.appendleft(entry.path)
                 self.count['dep_found'] += 1
@@ -364,12 +362,13 @@ class RPAPathwork(RKCommon):
 
         try:
             if pt(self.raw_inp).is_dir():
+                self._inp_pt = self.raw_inp
                 self.search_rpa()
             elif pt(self.raw_inp).is_file():
                 if self.valid_archives(self.raw_inp):
                     self.dep_dq.appendleft(self.raw_inp)
                     self.count['dep_found'] += 1
-                self.inp_pt = pt(self.raw_inp).parent
+                self._inp_pt = pt(self.raw_inp).parent
             else:
                 raise FileNotFoundError("File not found!")
         except Exception as err:  # pylint:disable=w0703
@@ -377,7 +376,7 @@ class RPAPathwork(RKCommon):
 
         if  self.outdir is None:
             self.outdir = 'rpakit_out'
-        self.out_pt = pt(self.inp_pt) /  self.outdir
+        self.out_pt = pt(self._inp_pt) /  self.outdir
         self.make_dirstruct(self.out_pt)
         self.ident_paired_rpa()
 
@@ -443,14 +442,17 @@ class RKmain(RPAPathwork, RPAKit):
 
             self.inf(1, f"[{self.count['dep_done'] / float(self.count['dep_found']):05.1%}] {self._strify(self.depot):>4}")
 
-        if self.count['dep_done'] > 0:
+        if self.task == 'exp' and self.count['dep_done'] > 0:
             self.inf(0, f" Done. We unpacked {self.count['dep_done']} archive(s).")
         elif self.task not in ['lst', 'tst']:
             self.inf(0, f"Oops! No archives where processed...")
 
 
 def parse_args():
-    """Argument parser and test for input path to provide functionality for the command line interface."""
+    """
+    Argument parser and test for input path to provide functionality for the
+    command line interface.
+    """
 
     def check_path(inp):
         """Helper to check if given path exist."""
