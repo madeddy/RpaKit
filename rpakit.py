@@ -236,8 +236,9 @@ class RPAKit(RKCommon):
                 raise NotImplementedError
 
         except (ValueError, NotImplementedError):
-            self.inf(0, f"\"{self.depot}\" is not a Ren\'Py archive or a unsupported " \
-                     f"variation.\nFound archive header: <{self._header}>", m_sort='warn')
+            self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported " \
+                     "variation."
+                     f"\nFound archive header: >{self._header}<", m_sort='warn')
             self.dep_initstate = False
         except LookupError:
             raise "There was some problem with the key of the archive..."
@@ -265,7 +266,6 @@ class RPAKit(RKCommon):
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
-        self.count['dep_done'] += 1
         if any(pt(self.out_pt).iterdir()):
             self.inf(2, f"Unpacked {self.count['fle_total']} files from archive: " \
                      f"{self.strify(self.depot)}")
@@ -277,15 +277,13 @@ class RPAKit(RKCommon):
         self.inf(2, "Listing archive files:")
         for item in sorted(self._reg.keys()):
             print(f"{item}")
-        self.count['dep_done'] += 1
         self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
                  f"{len(self._reg.keys())} files.")
 
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
-        self.inf(0, f"For archive <{self.depot.name}> the identified version " \
+        self.inf(0, f"For archive >{pt(self.depot).name}< the identified version " \
                  f"variant is: `{self._version['rpaid']}`")
-        self.count['dep_done'] += 1
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
@@ -354,7 +352,7 @@ class RPAPathwork(RKCommon):
             self.count['dep_found'] += 1
 
     def search_rpa(self):
-        """Searches RPA files in given directory and adds them to the deque."""
+        """Searches RPA files in given directory and adds them to the list."""
         for entry in os.scandir(self._inp_pt):
             self.add_depot(entry.path)
 
@@ -436,7 +434,7 @@ class RKmain(RPAPathwork, RPAKit):
         except OSError as err:
             raise Exception(
                 f"{err}: Error while testing and prepairing input path " \
-                f"< {self.raw_inp} > for the main job.")
+                f">{self.raw_inp}< for the main job.")
 
         while self.dep_lst:
             self.depot = self.dep_lst.pop()
@@ -444,7 +442,7 @@ class RKmain(RPAPathwork, RPAKit):
                 self.init_depot()
             except OSError as err:
                 raise Exception(f"{err}: Error while opening archive file " \
-                                f"< {self.depot} > for initialization.")
+                                f">{self.depot}< for initialization.")
 
             if self.dep_initstate is False:
                 continue
@@ -456,6 +454,7 @@ class RKmain(RPAPathwork, RPAKit):
             elif self.task == 'tst':
                 self.test_depot()
 
+            self.count['dep_done'] += 1
             self.inf(1, f"[{self.count['dep_done'] / float(self.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
         self.done_msg()
 
