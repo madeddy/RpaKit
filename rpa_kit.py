@@ -22,7 +22,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.20.0-alpha'
+__version__ = '0.21.0-alpha'
 
 
 class RKCommon:
@@ -124,7 +124,6 @@ class RPAKit(RKCommon):
 
     def extract_data(self, file_pt, file_data):
         """Extracts the archive data to a temp file."""
-
         if pt(self.depot).suffix == '.rpi':
             self.depot = pt(self.depot).with_suffix('.rpa')
 
@@ -177,9 +176,7 @@ class RPAKit(RKCommon):
 
     def collect_register(self):
         """Gets the depot's register."""
-
         offset, key = self.get_cipher()
-
         with pt(self.depot).open('rb') as ofi:
             ofi.seek(offset)
             self._reg = pickle.loads(zlib.decompress(ofi.read()), encoding='bytes')
@@ -256,7 +253,6 @@ class RPAKit(RKCommon):
 
     def unpack_depot(self):
         """Manages the unpacking of the depot files."""
-
         for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
             try:
                 self.make_dirstruct(pt(self.out_pt) / pt(file_pt).parent)
@@ -327,6 +323,13 @@ class RPAPathwork(RKCommon):
         self.raw_inp = None
         self.outdir = None
 
+    def make_output(self):
+        """Constructing outdir and -path."""
+        if self.outdir is None:
+            self.outdir = 'rpakit_out'
+        self.out_pt = pt(self._inp_pt) /  self.outdir
+        self.make_dirstruct(self.out_pt)
+
     def ident_paired_rpa(self):
         """Identifys rpa1 type paired archives and removes one from the deque."""
         dq_copy = self.dep_dq
@@ -350,16 +353,19 @@ class RPAPathwork(RKCommon):
                 self.dep_dq.appendleft(entry.path)
                 self.count['dep_found'] += 1
 
-    def pathworker(self):
-        """
-        This prepairs the given path and output dir. It will dicover if the input
-        is a file or directory and takes the according actions.
-        """
+    def transf_winpt(self):
+        """Check if WinOS and a win-path was given. Returns as posix. """
         if sys.platform.startswith('win32') and '\\' in self.raw_inp:
             self.inf(2, "The input appears to be a windows path. It should be" \
                      "given in posix style to minimize the error risk.", m_sort='note')
             self.raw_inp = pt(self.raw_inp).as_posix()
 
+    def pathworker(self):
+        """
+        This prepairs the given path and output dir. It will dicover if the input
+        is a file or directory and takes the according actions.
+        """
+        self.transf_winpt()
         self.raw_inp = pt(self.raw_inp).resolve(strict=True)
 
         try:
@@ -376,10 +382,7 @@ class RPAPathwork(RKCommon):
         except Exception as err:  # pylint:disable=w0703
             print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
 
-        if self.outdir is None:
-            self.outdir = 'rpakit_out'
-        self.out_pt = pt(self._inp_pt) /  self.outdir
-        self.make_dirstruct(self.out_pt)
+        self.make_output()
         self.ident_paired_rpa()
 
         if self.count['dep_found'] > 0:
@@ -407,9 +410,18 @@ class RKmain(RPAPathwork, RPAKit):
             self.outdir = outdir
         self.task = kwargs.get('task')
 
+    def done_msg(self):
+        """Gives a final info when all is done."""
+        if self.task == 'exp':
+            if self.count['dep_done'] > 0:
+                self.inf(0, f" Done. We unpacked {self.count['dep_done']} archive(s).")
+            else:
+                self.inf(0, f"Oops! No archives where processed...")
+        elif self.task  in ['lst', 'tst']:
+            self.inf(0, f"Completed!")
+
     def cfg_control(self):
         """Processes input, yields depot's to the functions."""
-
         if pt(self.raw_inp).is_file():
             self.inf(2, f"Input is a file. Processing {self.raw_inp}.")
         elif pt(self.raw_inp).is_dir():
@@ -425,7 +437,6 @@ class RKmain(RPAPathwork, RPAKit):
 
         while self.dep_dq:
             self.depot = self.dep_dq.pop()
-
             try:
                 self.init_depot()
             except OSError as err:
@@ -443,11 +454,7 @@ class RKmain(RPAPathwork, RPAKit):
                 self.test_depot()
 
             self.inf(1, f"[{self.count['dep_done'] / float(self.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
-
-        if self.task == 'exp' and self.count['dep_done'] > 0:
-            self.inf(0, f" Done. We unpacked {self.count['dep_done']} archive(s).")
-        elif self.task not in ['lst', 'tst']:
-            self.inf(0, f"Oops! No archives where processed...")
+        self.done_msg()
 
 
 def parse_args():
@@ -455,7 +462,6 @@ def parse_args():
     Argument parser and test for input path to provide functionality for the
     command line interface.
     """
-
     def check_path(inp):
         """Helper to check if given path exist."""
         if pt(inp).exists() and not pt(inp).is_symlink():
