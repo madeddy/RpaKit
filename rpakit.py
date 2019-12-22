@@ -14,7 +14,6 @@ import argparse
 from pathlib import Path as pt
 import pickle
 import zlib
-from collections import deque, Counter
 import textwrap
 
 
@@ -22,13 +21,13 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.21.0-alpha'
+__version__ = '0.22.0-alpha'
 
 
 class RKCommon:
     """Holds some RPA Kit basic methods and variables."""
     verbosity = 1
-    count = Counter({'dep_found': 0, 'dep_done': 0, 'fle_total': 0})
+    count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
     out_pt = ''
     name = 'RPAKit'
 
@@ -278,6 +277,7 @@ class RPAKit(RKCommon):
         self.inf(2, "Listing archive files:")
         for item in sorted(self._reg.keys()):
             print(f"{item}")
+        self.count['dep_done'] += 1
         self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
                  f"{len(self._reg.keys())} files.")
 
@@ -285,6 +285,7 @@ class RPAKit(RKCommon):
         """Tests archives for their format type and outputs this."""
         self.inf(0, f"For archive <{self.depot.name}> the identified version " \
                  f"variant is: `{self._version['rpaid']}`")
+        self.count['dep_done'] += 1
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
@@ -312,13 +313,13 @@ class RPAPathwork(RKCommon):
     """
     A support class for RPA Kit for the pathwork part. Needet inputs
     (file/dir path) are internaly providet. If input is a dir it searches
-    there for archives, checks and filters them and puts them in a deque.
+    there for archives, checks and filters them and puts them in a list.
     A archiv as input skips the search part.
     """
 
     def __init__(self):
         super().__init__()
-        self.dep_dq = deque()
+        self.dep_lst = []
         self._inp_pt = None
         self.raw_inp = None
         self.outdir = None
@@ -331,13 +332,13 @@ class RPAPathwork(RKCommon):
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_rpa(self):
-        """Identifys rpa1 type paired archives and removes one from the deque."""
-        dq_copy = self.dep_dq
-        for entry in list(dq_copy):
+        """Identifys rpa1 type paired archives and removes one from the list."""
+        lst_copy = self.dep_lst
+        for entry in list(lst_copy):
             if pt(entry).suffix == '.rpi':
                 twin = str(pt(entry).with_suffix('.rpa'))
-                if twin in self.dep_dq:
-                    self.dep_dq.remove(twin)
+                if twin in self.dep_lst:
+                    self.dep_lst.remove(twin)
                     self.count['dep_found'] -= 1
 
     @staticmethod
@@ -350,11 +351,11 @@ class RPAPathwork(RKCommon):
         """Searches RPA files in given directory and adds them to the deque."""
         for entry in os.scandir(self._inp_pt):
             if self.valid_archives(entry):
-                self.dep_dq.appendleft(entry.path)
+                self.dep_lst.append(entry.path)
                 self.count['dep_found'] += 1
 
     def transf_winpt(self):
-        """Check if WinOS and a win-path was given. Returns as posix. """
+        """Check if WinOS and a win-path was given. Returns as posix."""
         if sys.platform.startswith('win32') and '\\' in self.raw_inp:
             self.inf(2, "The input appears to be a windows path. It should be" \
                      "given in posix style to minimize the error risk.", m_sort='note')
@@ -374,7 +375,7 @@ class RPAPathwork(RKCommon):
                 self.search_rpa()
             elif pt(self.raw_inp).is_file():
                 if self.valid_archives(self.raw_inp):
-                    self.dep_dq.appendleft(self.raw_inp)
+                    self.dep_lst.append(self.raw_inp)
                     self.count['dep_found'] += 1
                 self._inp_pt = pt(self.raw_inp).parent
             else:
@@ -387,7 +388,7 @@ class RPAPathwork(RKCommon):
 
         if self.count['dep_found'] > 0:
             self.inf(1, f"{self.count['dep_found']} RPA files to process:\n"
-                     f"{chr(10).join([*map(str, self.dep_dq)])}", m_sort='raw')
+                     f"{chr(10).join([*map(str, self.dep_lst)])}", m_sort='raw')
         else:
             self.inf(1, "No RPA files found. Was the correct path given?")
 
@@ -435,8 +436,8 @@ class RKmain(RPAPathwork, RPAKit):
                 f"{err}: Error while testing and prepairing input path " \
                 f"< {self.raw_inp} > for the main job.")
 
-        while self.dep_dq:
-            self.depot = self.dep_dq.pop()
+        while self.dep_lst:
+            self.depot = self.dep_lst.pop()
             try:
                 self.init_depot()
             except OSError as err:
