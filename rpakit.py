@@ -347,12 +347,16 @@ class RPAPathwork(RKCommon):
         return bool(pt(entry).is_file() and pt(entry).suffix
                     in ['.rpa', '.rpi', '.rpc'])
 
+    def add_depot(self, depot):
+        """Adds legit RPA files to the depot list."""
+        if self.valid_archives(depot):
+            self.dep_lst.append(depot)
+            self.count['dep_found'] += 1
+
     def search_rpa(self):
         """Searches RPA files in given directory and adds them to the deque."""
         for entry in os.scandir(self._inp_pt):
-            if self.valid_archives(entry):
-                self.dep_lst.append(entry.path)
-                self.count['dep_found'] += 1
+            self.add_depot(entry.path)
 
     def transf_winpt(self):
         """Check if WinOS and a win-path was given. Returns as posix."""
@@ -374,9 +378,7 @@ class RPAPathwork(RKCommon):
                 self._inp_pt = self.raw_inp
                 self.search_rpa()
             elif pt(self.raw_inp).is_file():
-                if self.valid_archives(self.raw_inp):
-                    self.dep_lst.append(self.raw_inp)
-                    self.count['dep_found'] += 1
+                self.add_depot(self.raw_inp)
                 self._inp_pt = pt(self.raw_inp).parent
             else:
                 raise FileNotFoundError("File not found!")
