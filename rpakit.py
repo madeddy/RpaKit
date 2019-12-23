@@ -21,7 +21,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.23.0-alpha'
+__version__ = '0.24.0-alpha'
 
 
 class RKC:
@@ -31,7 +31,7 @@ class RKC:
     name = 'RpaKit'
     verbosity = 1
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
-    out_pt = ''
+    out_pt = None
 
 
     def __str__(self):
@@ -70,239 +70,6 @@ class RKC:
         if not pt(dst).exists():
             cls.inf(2, f"Creating directory structure for: {dst}")
             pt(dst).mkdir(parents=True, exist_ok=True)
-
-
-class RPAKit(RKC):
-    """
-    The class for analyzing and unpacking RPA files. All needet inputs
-    (depot, output path) are internaly providet.
-    """
-
-    _rpaformats = {'x': {'rpaid': 'rpa1',
-                         'desc': 'Legacy type RPA-1.0'},
-                   'RPA-2.0 ': {'rpaid': 'rpa2',
-                                'desc': 'Legacy type RPA-2.0'},
-                   'RPA-3.0 ': {'rpaid': 'rpa3',
-                                'desc': 'Standard type RPA-3.0'},
-                   'RPI-3.0': {'rpaid': 'rpa32',
-                               'alias': 'rpi3',
-                               'desc': 'Custom type RPI-3.0'},
-                   'RPA-3.1': {'rpaid': 'rpa3',
-                               'alias': 'rpa31',
-                               'desc': 'Custom type RPA-3.1, a alias of RPA-3.0'},
-                   'RPA-3.2': {'rpaid': 'rpa32',
-                               'desc': 'Custom type RPA-3.2'},
-                   'RPA-4.0': {'rpaid': 'rpa3',
-                               'alias': 'rpa4',
-                               'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'},
-                   'ALT-1.0': {'rpaid': 'alt1',
-                               'desc': 'Custom type ALT-1.0'},
-                   'ZiX-12A': {'rpaid': 'zix12a',
-                               'desc': 'Custom type ZiX-12A'},
-                   'ZiX-12B': {'rpaid': 'zix12b',
-                               'desc': 'Custom type ZiX-12B'}}
-
-    _rpaspecs = {'rpa1': {'offset': 0,
-                          'key': None},
-                 'rpa2': {'offset': slice(8, None),
-                          'key': None},
-                 'rpa3': {'offset': slice(8, 24),
-                          'key': slice(25, 33)},
-                 'rpa32': {'offset': slice(8, 24),
-                           'key': slice(27, 35)},
-                 'alt1': {'offset': slice(17, 33),
-                          'key': slice(8, 16),
-                          'key2': 0xDABE8DF0}}
-
-    def __init__(self):
-        super().__init__()
-        self.depot = ''
-        self._header = ''
-        self._version = {}
-        self._reg = {}
-        self.dep_initstate = None
-
-    def extract_data(self, file_pt, file_data):
-        """Extracts the archive data to a temp file."""
-        if pt(self.depot).suffix == '.rpi':
-            self.depot = pt(self.depot).with_suffix('.rpa')
-
-        with pt(self.depot).open('rb') as ofi:
-            if len(self._reg[file_pt]) == 1:
-                ofs, leg, pre = file_data[0]
-                ofi.seek(ofs)
-                tmp_file = pre + ofi.read(leg - len(pre))
-            else:
-                part = []
-                for ofs, leg, pre in file_data:
-                    ofi.seek(ofs)
-                    part.append(ofi.read(leg))
-                    tmp_file = pre.join(part)
-
-        return tmp_file
-
-    def unscrample_reg(self, key):
-        """Unscrambles the archive register."""
-        for _kv in self._reg:
-            self._reg[_kv] = [(ofs ^ key, leg ^ key, pre)
-                              for ofs, leg, pre in self._reg[_kv]]
-
-    def unify_reg(self):
-        """Arrange the register in common form."""
-        for val in self._reg.values():
-            if len(val[0]) == 2:
-                for num, _ in enumerate(val):
-                    val[num] += (b'',)
-
-    def get_cipher(self):
-        """Fetches the cipher for the register from the header infos."""
-        # NOTE: Slicing is error prone; perhaps use of "split to parts" as fallback
-        # in they exceptions is thing; or even reverse the order of this methods then
-        offset, key = 0, None
-        try:
-            slos, slky = self._version['offset'], self._version['key']
-            if self._version['rpaid'] != 'rpa1':
-                offset = int(self._header[slos], 16)
-                if self._version['rpaid'] != 'rpa2':
-                    key = int(self._header[slky], 16)
-        except (LookupError, ValueError) as err:
-            print(sys.exc_info())
-            raise f"{err}: Problem with the format data encountered. Perhabs " \
-                    "the RPA is malformed."
-        except TypeError as err:
-            raise f"{err}: Somehow the wrong data types had a meeting in here. " \
-                    "They did'n like each other."
-        return offset, key
-
-    def collect_register(self):
-        """Gets the depot's register."""
-        offset, key = self.get_cipher()
-        with pt(self.depot).open('rb') as ofi:
-            ofi.seek(offset)
-            self._reg = pickle.loads(zlib.decompress(ofi.read()), encoding='bytes')
-
-        self.unify_reg()
-        if key is not None:
-            if 'key2' in self._version.keys():
-                key = key ^ self._version['key2']
-            self.unscrample_reg(key)
-
-    def get_version_specs(self):
-        """Yields for the given archive version the cipher data."""
-        try:
-            for key, val in self._rpaspecs.items():
-                if key == self._version['rpaid']:
-                    self._version.update(val)
-                    break
-        except KeyError:
-            raise f"Error while aquiring version specifications for {self.depot}."
-
-    def get_header_start(self):
-        """Reads the header start in and decodes to string."""
-        try:
-            magic = self._header[:12].decode()
-        except UnicodeDecodeError:
-            self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.", m_sort='note')
-            # FIXME: Ugly code; needs improvement
-            # rpa1 type and weirdo files must be twice catched
-            try:
-                magic = self._header[:1].decode()
-            except UnicodeError:
-                self.inf(0, "UnicodeError: Header unreadable. Tested file is " \
-                         "perhabs no RPA or very weird.", m_sort='warn')
-                magic = ''
-        return magic
-
-    def guess_version(self):
-        """
-        Determines archive version from header or suffix and pairs alias variants
-        with a main format id.
-        """
-        # HACK:We reset both or the val from last depot is still there. Weird files
-        # slip in and error
-        self.dep_initstate = None
-        self._version = {}
-        magic = self.get_header_start()
-        try:
-            for key, val in self._rpaformats.items():
-                if key in magic:
-                    self._version = val
-            # NOTE:If no version is found the dict is empty; searching with a key
-            # slice for 'rpaid' excepts a KeyError (better init dict with key?)
-            if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
-                self._version = {}
-            elif not self._version:
-                raise ValueError
-            elif 'zix12a' in self._version.values() or 'zix12b' in self._version.values():
-                raise NotImplementedError
-
-        except (ValueError, NotImplementedError):
-            self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported " \
-                     "variation."
-                     f"\nFound archive header: >{self._header}<", m_sort='warn')
-            self.dep_initstate = False
-        except LookupError:
-            raise "There was some problem with the key of the archive..."
-        else:
-            self.dep_initstate = True
-
-    def get_header(self):
-        """Opens file and reads header line in."""
-        with pt(self.depot).open('rb') as ofi:
-            ofi.seek(0)
-            self._header = ofi.readline()
-
-    def unpack_depot(self):
-        """Manages the unpacking of the depot files."""
-        for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
-            try:
-                self.make_dirstruct(pt(self.out_pt) / pt(file_pt).parent)
-
-                tmp_file = self.extract_data(file_pt, file_data)
-                self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
-                         f"{file_pt:>4}")
-
-                with pt(self.out_pt / file_pt).open('wb') as ofi:
-                    ofi.write(tmp_file)
-            except TypeError as err:
-                raise f"{err}: Unknown error while trying to extract a file."
-
-        if any(pt(self.out_pt).iterdir()):
-            self.inf(2, f"Unpacked {RKC.count['fle_total']} files from archive: " \
-                     f"{self.strify(self.depot)}")
-        else:
-            self.inf(2, "No files from archive unpacked.")
-
-    def show_depot_content(self):
-        """Lists the file content of a renpy archive without unpacking."""
-        self.inf(2, "Listing archive files:")
-        for item in sorted(self._reg.keys()):
-            print(f"{item}")
-        self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
-                 f"{len(self._reg.keys())} files.")
-
-    def test_depot(self):
-        """Tests archives for their format type and outputs this."""
-        self.inf(0, f"For archive >{pt(self.depot).name}< the identified version " \
-                 f"variant is: {self._version['desc']!r}")
-
-    def init_depot(self):
-        """Initializes depot files to a ready state for further operations."""
-        self.get_header()
-        self.guess_version()
-
-        if 'alias' in self._version.keys():
-            self.inf(2, "Unofficial RPA found.")
-        else:
-            self.inf(2, "Official RPA found.")
-
-        if self.dep_initstate is False:
-            self.inf(0, f"Skipping bogus archive: {self.strify(self.depot)}", m_sort='note')
-        elif self.dep_initstate is True:
-            self.get_version_specs()
-            self.collect_register()
-            self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
-            RKC.count['fle_total'] = len(self._reg)
 
 
 class RPAPathwork(RKC):
@@ -391,6 +158,246 @@ class RPAPathwork(RKC):
             self.inf(1, "No RPA files found. Was the correct path given?")
 
 
+class RPAKit(RKC):
+    """
+    The class for analyzing and unpacking RPA files. All needet inputs
+    (depot, output path) are internaly providet.
+    """
+
+    _rpaformats = {'x': {'rpaid': 'rpa1',
+                         'desc': 'Legacy type RPA-1.0'},
+                   'RPA-2.0 ': {'rpaid': 'rpa2',
+                                'desc': 'Legacy type RPA-2.0'},
+                   'RPA-3.0 ': {'rpaid': 'rpa3',
+                                'desc': 'Standard type RPA-3.0'},
+                   'RPI-3.0': {'rpaid': 'rpa32',
+                               'alias': 'rpi3',
+                               'desc': 'Custom type RPI-3.0'},
+                   'RPA-3.1': {'rpaid': 'rpa3',
+                               'alias': 'rpa31',
+                               'desc': 'Custom type RPA-3.1, a alias of RPA-3.0'},
+                   'RPA-3.2': {'rpaid': 'rpa32',
+                               'desc': 'Custom type RPA-3.2'},
+                   'RPA-4.0': {'rpaid': 'rpa3',
+                               'alias': 'rpa4',
+                               'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'},
+                   'ALT-1.0': {'rpaid': 'alt1',
+                               'desc': 'Custom type ALT-1.0'},
+                   'ZiX-12A': {'rpaid': 'zix12a',
+                               'desc': 'Custom type ZiX-12A'},
+                   'ZiX-12B': {'rpaid': 'zix12b',
+                               'desc': 'Custom type ZiX-12B'}}
+
+    _rpaspecs = {'rpa1': {'offset': 0,
+                          'key': None},
+                 'rpa2': {'offset': slice(8, None),
+                          'key': None},
+                 'rpa3': {'offset': slice(8, 24),
+                          'key': slice(25, 33)},
+                 'rpa32': {'offset': slice(8, 24),
+                           'key': slice(27, 35)},
+                 'alt1': {'offset': slice(17, 33),
+                          'key': slice(8, 16),
+                          'key2': 0xDABE8DF0}}
+
+    def __init__(self):
+        super().__init__()
+        self.depot = None
+        self._header = None
+        self._version = {}
+        self._reg = {}
+        self.dep_initstate = None
+
+    def clear_rk_vars(self):
+        """This clears some vars. In rare cases nothing is assigned and old values
+        from previous depot run are caried over. Weird files will slip in and error.
+        """
+        self._header = None
+        self._version.clear()
+        self._reg.clear()
+        self.dep_initstate = None
+
+    def extract_data(self, file_pt, file_data):
+        """Extracts the archive data to a temp file."""
+        if pt(self.depot).suffix == '.rpi':
+            self.depot = pt(self.depot).with_suffix('.rpa')
+
+        with pt(self.depot).open('rb') as ofi:
+            if len(self._reg[file_pt]) == 1:
+                ofs, leg, pre = file_data[0]
+                ofi.seek(ofs)
+                tmp_file = pre + ofi.read(leg - len(pre))
+            else:
+                part = []
+                for ofs, leg, pre in file_data:
+                    ofi.seek(ofs)
+                    part.append(ofi.read(leg))
+                    tmp_file = pre.join(part)
+
+        return tmp_file
+
+    def unscrample_reg(self, key):
+        """Unscrambles the archive register."""
+        for _kv in self._reg:
+            self._reg[_kv] = [(ofs ^ key, leg ^ key, pre)
+                              for ofs, leg, pre in self._reg[_kv]]
+
+    def unify_reg(self):
+        """Arrange the register in common form."""
+        for val in self._reg.values():
+            if len(val[0]) == 2:
+                for num, _ in enumerate(val):
+                    val[num] += (b'',)
+
+    def get_cipher(self):
+        """Fetches the cipher for the register from the header infos."""
+        # NOTE: Slicing is error prone; perhaps use of "split to parts" as a fallback
+        # in the excepts is useful or even reverse the order of both
+        offset, key = 0, None
+        try:
+            slos, slky = self._version['offset'], self._version['key']
+            if self._version['rpaid'] != 'rpa1':
+                offset = int(self._header[slos], 16)
+                if self._version['rpaid'] != 'rpa2':
+                    key = int(self._header[slky], 16)
+        except (LookupError, ValueError) as err:
+            print(sys.exc_info())
+            raise f"{err}: Problem with the format data encountered. Perhabs " \
+                    "the RPA is malformed."
+        except TypeError as err:
+            raise f"{err}: Somehow the wrong data types had a meeting in here. " \
+                    "They did'n like each other."
+        return offset, key
+
+    def collect_register(self):
+        """Gets the depot's register."""
+        offset, key = self.get_cipher()
+        with pt(self.depot).open('rb') as ofi:
+            ofi.seek(offset)
+            self._reg = pickle.loads(zlib.decompress(ofi.read()), encoding='bytes')
+
+        self.unify_reg()
+        if key is not None:
+            if 'key2' in self._version.keys():
+                key = key ^ self._version['key2']
+            self.unscrample_reg(key)
+
+    def get_version_specs(self):
+        """Yields for the given archive version the cipher data."""
+        try:
+            for key, val in self._rpaspecs.items():
+                if key == self._version['rpaid']:
+                    self._version.update(val)
+                    break
+        except KeyError:
+            raise f"Error while aquiring version specifications for {self.depot}."
+
+    def get_header_start(self):
+        """Reads the header start in and decodes to string."""
+        try:
+            magic = self._header[:12].decode()
+        except UnicodeDecodeError:
+            self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.", m_sort='note')
+            # FIXME: Ugly code; needs improvement
+            # rpa1 type and weirdo files must be twice catched
+            try:
+                magic = self._header[:1].decode()
+            except UnicodeError:
+                self.inf(0, "UnicodeError: Header unreadable. Tested file is " \
+                         "perhabs no RPA or very weird.", m_sort='warn')
+                magic = ''
+        return magic
+
+    def guess_version(self):
+        """
+        Determines archive version from header or suffix and pairs alias variants
+        with a main format id.
+        """
+        magic = self.get_header_start()
+        try:
+            for key, val in self._rpaformats.items():
+                if key in magic:
+                    self._version.update(val)
+
+            # NOTE:If no version is found the dict is empty; searching with a key
+            # slice for 'rpaid' excepts a KeyError (better init dict with key?)
+            if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
+                # self._version = {}
+                self._version.clear()
+            elif not self._version:
+                raise ValueError
+            elif 'zix12a' in self._version.values() or 'zix12b' in self._version.values():
+                raise NotImplementedError
+
+        except (ValueError, NotImplementedError):
+            self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported " \
+                     "variation."
+                     f"\nFound archive header: >{self._header}<", m_sort='warn')
+            self.dep_initstate = False
+        except LookupError:
+            raise "There was some problem with the key of the archive..."
+        else:
+            self.dep_initstate = True
+
+    def get_header(self):
+        """Opens file and reads header line in."""
+        with pt(self.depot).open('rb') as ofi:
+            ofi.seek(0)
+            self._header = ofi.readline()
+
+    def unpack_depot(self):
+        """Manages the unpacking of the depot files."""
+        for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
+            try:
+                self.make_dirstruct(pt(self.out_pt) / pt(file_pt).parent)
+
+                tmp_file = self.extract_data(file_pt, file_data)
+                self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
+                         f"{file_pt:>4}")
+
+                with pt(self.out_pt / file_pt).open('wb') as ofi:
+                    ofi.write(tmp_file)
+            except TypeError as err:
+                raise f"{err}: Unknown error while trying to extract a file."
+
+        if any(pt(self.out_pt).iterdir()):
+            self.inf(2, f"Unpacked {RKC.count['fle_total']} files from archive: " \
+                     f"{self.strify(self.depot)}")
+        else:
+            self.inf(2, "No files from archive unpacked.")
+
+    def show_depot_content(self):
+        """Lists the file content of a renpy archive without unpacking."""
+        self.inf(2, "Listing archive files:")
+        for item in sorted(self._reg.keys()):
+            print(f"{item}")
+        self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
+                 f"{len(self._reg.keys())} files.")
+
+    def test_depot(self):
+        """Tests archives for their format type and outputs this."""
+        self.inf(0, f"For archive >{pt(self.depot).name}< the identified version " \
+                 f"variant is: {self._version['desc']!r}")
+
+    def init_depot(self):
+        """Initializes depot files to a ready state for further operations."""
+        self.get_header()
+        self.guess_version()
+
+        if 'alias' in self._version.keys():
+            self.inf(2, "Unofficial RPA found.")
+        else:
+            self.inf(2, "Official RPA found.")
+
+        if self.dep_initstate is False:
+            self.inf(0, f"Skipping bogus archive: {self.strify(self.depot)}", m_sort='note')
+        elif self.dep_initstate is True:
+            self.get_version_specs()
+            self.collect_register()
+            self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
+            RKC.count['fle_total'] = len(self._reg)
+
+
 class RKmain(RPAPathwork, RPAKit):
     """
     Main class to process args and executing the related methods. Args:
@@ -454,6 +461,8 @@ class RKmain(RPAPathwork, RPAKit):
 
             RKC.count['dep_done'] += 1
             self.inf(1, f"[{RKC.count['dep_done'] / float(RKC.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
+            self.clear_rk_vars()
+
         self.done_msg()
 
 
