@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 """
-RPAKit is a app which searches in a given path(if not file) Renpy archives
-and uncompresses the content in a new subdirectory. Listing without writing
-or testing the archiv is also possible.
+RPAKit is a small app which searches in a given path(if not file) RenPy archives
+and decompresses the content in a custom-made subdirectory. Just listing without
+writing or testing & identifying the archiv is also possible.
 """
 
-# pylint:disable=c0301, w0612, r0902, w0511, r0903, c0116
+# pylint:disable=c0301, c0116, w0511, w0612, r0902, r0903
 
 import os
 import sys
@@ -25,7 +25,9 @@ __version__ = '0.23.0-alpha'
 
 
 class RKC:
-    """Holds some RPA Kit basic methods and variables."""
+    """Rpa Kit Common is the base class which holds some shared methods and variables
+    for the childs.
+    """
     name = 'RpaKit'
     verbosity = 1
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
@@ -72,7 +74,7 @@ class RKC:
 
 class RPAKit(RKC):
     """
-    The class for analyzing and unpacking RPA files. Needet inputs
+    The class for analyzing and unpacking RPA files. All needet inputs
     (depot, output path) are internaly providet.
     """
 
@@ -202,7 +204,7 @@ class RPAKit(RKC):
         except UnicodeDecodeError:
             self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.", m_sort='note')
             # FIXME: Ugly code; needs improvement
-            # Needs to be twice catched for rpa1 type and weirdo files
+            # rpa1 type and weirdo files must be twice catched
             try:
                 magic = self._header[:1].decode()
             except UnicodeError:
@@ -286,24 +288,21 @@ class RPAKit(RKC):
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
-        try:
-            self.get_header()
-            self.guess_version()
+        self.get_header()
+        self.guess_version()
 
-            if 'alias' in self._version.keys():
-                self.inf(2, "Unofficial RPA found.")
-            else:
-                self.inf(2, "Official RPA found.")
+        if 'alias' in self._version.keys():
+            self.inf(2, "Unofficial RPA found.")
+        else:
+            self.inf(2, "Official RPA found.")
 
-            if self.dep_initstate is False:
-                self.inf(0, f"Skipping bogus archive: {self.strify(self.depot)}", m_sort='note')
-            elif self.dep_initstate is True:
-                self.get_version_specs()
-                self.collect_register()
-                self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
-                RKC.count['fle_total'] = len(self._reg)
-        except Exception:
-            raise Exception("Unknown error while reading depot in.")
+        if self.dep_initstate is False:
+            self.inf(0, f"Skipping bogus archive: {self.strify(self.depot)}", m_sort='note')
+        elif self.dep_initstate is True:
+            self.get_version_specs()
+            self.collect_register()
+            self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
+            RKC.count['fle_total'] = len(self._reg)
 
 
 class RPAPathwork(RKC):
