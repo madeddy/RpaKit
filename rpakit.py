@@ -21,15 +21,15 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.22.0-alpha'
+__version__ = '0.23.0-alpha'
 
 
-class RKCommon:
+class RKC:
     """Holds some RPA Kit basic methods and variables."""
+    name = 'RpaKit'
     verbosity = 1
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
     out_pt = ''
-    name = 'RPAKit'
 
 
     def __str__(self):
@@ -70,7 +70,7 @@ class RKCommon:
             pt(dst).mkdir(parents=True, exist_ok=True)
 
 
-class RPAKit(RKCommon):
+class RPAKit(RKC):
     """
     The class for analyzing and unpacking RPA files. Needet inputs
     (depot, output path) are internaly providet.
@@ -100,7 +100,6 @@ class RPAKit(RKCommon):
                    'ZiX-12B': {'rpaid': 'zix12b',
                                'desc': 'Custom type ZiX-12B'}}
 
-
     _rpaspecs = {'rpa1': {'offset': 0,
                           'key': None},
                  'rpa2': {'offset': slice(8, None),
@@ -121,7 +120,6 @@ class RPAKit(RKCommon):
         self._reg = {}
         self.dep_initstate = None
 
-
     def extract_data(self, file_pt, file_data):
         """Extracts the archive data to a temp file."""
         if pt(self.depot).suffix == '.rpi':
@@ -129,23 +127,23 @@ class RPAKit(RKCommon):
 
         with pt(self.depot).open('rb') as ofi:
             if len(self._reg[file_pt]) == 1:
-                ofs, lng, pre = file_data[0]
+                ofs, leg, pre = file_data[0]
                 ofi.seek(ofs)
-                tmp_file = pre + ofi.read(lng - len(pre))
+                tmp_file = pre + ofi.read(leg - len(pre))
             else:
-                tmp = []
-                for ofs, lng, pre in file_data:
+                part = []
+                for ofs, leg, pre in file_data:
                     ofi.seek(ofs)
-                    tmp.append(ofi.read(lng))
-                    tmp_file = pre.join(tmp)
+                    part.append(ofi.read(leg))
+                    tmp_file = pre.join(part)
 
         return tmp_file
 
     def unscrample_reg(self, key):
         """Unscrambles the archive register."""
         for _kv in self._reg:
-            self._reg[_kv] = [(ofs ^ key, lng ^ key, pre)
-                              for ofs, lng, pre in self._reg[_kv]]
+            self._reg[_kv] = [(ofs ^ key, leg ^ key, pre)
+                              for ofs, leg, pre in self._reg[_kv]]
 
     def unify_reg(self):
         """Arrange the register in common form."""
@@ -246,7 +244,7 @@ class RPAKit(RKCommon):
         else:
             self.dep_initstate = True
 
-    def collect_header(self):
+    def get_header(self):
         """Opens file and reads header line in."""
         with pt(self.depot).open('rb') as ofi:
             ofi.seek(0)
@@ -259,7 +257,7 @@ class RPAKit(RKCommon):
                 self.make_dirstruct(pt(self.out_pt) / pt(file_pt).parent)
 
                 tmp_file = self.extract_data(file_pt, file_data)
-                self.inf(2, f"[{file_num / float(self.count['fle_total']):05.1%}] " \
+                self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
                          f"{file_pt:>4}")
 
                 with pt(self.out_pt / file_pt).open('wb') as ofi:
@@ -268,7 +266,7 @@ class RPAKit(RKCommon):
                 raise f"{err}: Unknown error while trying to extract a file."
 
         if any(pt(self.out_pt).iterdir()):
-            self.inf(2, f"Unpacked {self.count['fle_total']} files from archive: " \
+            self.inf(2, f"Unpacked {RKC.count['fle_total']} files from archive: " \
                      f"{self.strify(self.depot)}")
         else:
             self.inf(2, "No files from archive unpacked.")
@@ -289,7 +287,7 @@ class RPAKit(RKCommon):
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
         try:
-            self.collect_header()
+            self.get_header()
             self.guess_version()
 
             if 'alias' in self._version.keys():
@@ -303,12 +301,12 @@ class RPAKit(RKCommon):
                 self.get_version_specs()
                 self.collect_register()
                 self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
-                self.count['fle_total'] = len(self._reg)
+                RKC.count['fle_total'] = len(self._reg)
         except Exception:
             raise Exception("Unknown error while reading depot in.")
 
 
-class RPAPathwork(RKCommon):
+class RPAPathwork(RKC):
     """
     A support class for RPA Kit for the pathwork part. Needet inputs
     (file/dir path) are internaly providet. If input is a dir it searches
@@ -338,7 +336,7 @@ class RPAPathwork(RKCommon):
                 twin = str(pt(entry).with_suffix('.rpa'))
                 if twin in self.dep_lst:
                     self.dep_lst.remove(twin)
-                    self.count['dep_found'] -= 1
+                    RKC.count['dep_found'] -= 1
 
     @staticmethod
     def valid_archives(entry):
@@ -350,7 +348,7 @@ class RPAPathwork(RKCommon):
         """Adds legit RPA files to the depot list."""
         if self.valid_archives(depot):
             self.dep_lst.append(depot)
-            self.count['dep_found'] += 1
+            RKC.count['dep_found'] += 1
 
     def search_rpa(self):
         """Searches RPA files in given directory and adds them to the list."""
@@ -387,8 +385,8 @@ class RPAPathwork(RKCommon):
         self.make_output()
         self.ident_paired_rpa()
 
-        if self.count['dep_found'] > 0:
-            self.inf(1, f"{self.count['dep_found']} RPA files to process:\n"
+        if RKC.count['dep_found'] > 0:
+            self.inf(1, f"{RKC.count['dep_found']} RPA files to process:\n"
                      f"{chr(10).join([*map(str, self.dep_lst)])}", m_sort='raw')
         else:
             self.inf(1, "No RPA files found. Was the correct path given?")
@@ -405,7 +403,7 @@ class RKmain(RPAPathwork, RPAKit):
 
     def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
         if verbose is not None:
-            RKCommon.verbosity = verbose
+            RKC.verbosity = verbose
         super().__init__()
         self.raw_inp = inpath
         if outdir is not None:
@@ -415,8 +413,8 @@ class RKmain(RPAPathwork, RPAKit):
     def done_msg(self):
         """Gives a final info when all is done."""
         if self.task == 'exp':
-            if self.count['dep_done'] > 0:
-                self.inf(0, f" Done. We unpacked {self.count['dep_done']} archive(s).")
+            if RKC.count['dep_done'] > 0:
+                self.inf(0, f" Done. We unpacked {RKC.count['dep_done']} archive(s).")
             else:
                 self.inf(0, f"Oops! No archives where processed...")
         elif self.task  in ['lst', 'tst']:
@@ -455,8 +453,8 @@ class RKmain(RPAPathwork, RPAKit):
             elif self.task == 'tst':
                 self.test_depot()
 
-            self.count['dep_done'] += 1
-            self.inf(1, f"[{self.count['dep_done'] / float(self.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
+            RKC.count['dep_done'] += 1
+            self.inf(1, f"[{RKC.count['dep_done'] / float(RKC.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
         self.done_msg()
 
 
