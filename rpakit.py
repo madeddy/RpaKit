@@ -77,28 +77,29 @@ class RPAKit(RKCommon):
     """
 
     _rpaformats = {'x': {'rpaid': 'rpa1',
-                         'desc': 'RPA-1.0'},
+                         'desc': 'Legacy type RPA-1.0'},
                    'RPA-2.0 ': {'rpaid': 'rpa2',
-                                'desc': 'RPA-2.0'},
+                                'desc': 'Legacy type RPA-2.0'},
                    'RPA-3.0 ': {'rpaid': 'rpa3',
-                                'desc': 'RPA-3.0'},
+                                'desc': 'Standard type RPA-3.0'},
                    'RPI-3.0': {'rpaid': 'rpa32',
                                'alias': 'rpi3',
-                               'desc': 'RPI-3.0'},
+                               'desc': 'Custom type RPI-3.0'},
                    'RPA-3.1': {'rpaid': 'rpa3',
                                'alias': 'rpa31',
-                               'desc': 'RPA-3.1'},
+                               'desc': 'Custom type RPA-3.1, a alias of RPA-3.0'},
                    'RPA-3.2': {'rpaid': 'rpa32',
-                               'desc': 'RPA-3.2'},
+                               'desc': 'Custom type RPA-3.2'},
                    'RPA-4.0': {'rpaid': 'rpa3',
                                'alias': 'rpa4',
-                               'desc': 'RPA-4.0'},
+                               'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'},
                    'ALT-1.0': {'rpaid': 'alt1',
-                               'desc': 'ALT-1.0'},
+                               'desc': 'Custom type ALT-1.0'},
                    'ZiX-12A': {'rpaid': 'zix12a',
-                               'desc': 'ZiX-12A'},
+                               'desc': 'Custom type ZiX-12A'},
                    'ZiX-12B': {'rpaid': 'zix12b',
-                               'desc': 'ZiX-12B'}}
+                               'desc': 'Custom type ZiX-12B'}}
+
 
     _rpaspecs = {'rpa1': {'offset': 0,
                           'key': None},
@@ -283,7 +284,7 @@ class RPAKit(RKCommon):
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
         self.inf(0, f"For archive >{pt(self.depot).name}< the identified version " \
-                 f"variant is: `{self._version['rpaid']}`")
+                 f"variant is: {self._version['desc']!r}")
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
