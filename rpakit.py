@@ -25,8 +25,9 @@ __version__ = '0.24.0-alpha'
 
 
 class RKC:
-    """Rpa Kit Common is the base class which holds some shared methods and variables
-    for the childs.
+    """
+    "Rpa Kit Common" is the base class which provides some shared methods and
+    variables for the child classes.
     """
     name = 'RpaKit'
     verbosity = 1
@@ -66,7 +67,7 @@ class RKC:
 
     @classmethod
     def make_dirstruct(cls, dst):
-        """Constructs needet output directorys if they not already exist."""
+        """Constructs any needet output directorys if they not already exist."""
         if not pt(dst).exists():
             cls.inf(2, f"Creating directory structure for: {dst}")
             pt(dst).mkdir(parents=True, exist_ok=True)
@@ -74,9 +75,9 @@ class RKC:
 
 class RPAPathwork(RKC):
     """
-    A support class for RPA Kit for the pathwork part. Needet inputs
-    (file/dir path) are internaly providet. If input is a dir it searches
-    there for archives, checks and filters them and puts them in a list.
+    Support class for RPA Kit's path related work. Needet inputs (file/dir path)
+    are internaly providet. If input is a dir it searches there for archives,
+    checks and filters them and puts them in a list.
     A archiv as input skips the search part.
     """
 
@@ -88,7 +89,7 @@ class RPAPathwork(RKC):
         self.outdir = None
 
     def make_output(self):
-        """Constructing outdir and -path."""
+        """Constructs outdir and outpath."""
         if self.outdir is None:
             self.outdir = 'rpakit_out'
         self.out_pt = pt(self._inp_pt) /  self.outdir
@@ -111,13 +112,13 @@ class RPAPathwork(RKC):
                     in ['.rpa', '.rpi', '.rpc'])
 
     def add_depot(self, depot):
-        """Adds legit RPA files to the depot list."""
+        """Adds by extension as RPA identified files to the depot list."""
         if self.valid_archives(depot):
             self.dep_lst.append(depot)
             RKC.count['dep_found'] += 1
 
     def search_rpa(self):
-        """Searches RPA files in given directory and adds them to the list."""
+        """Searches dir and calls another method which identifys RPA files."""
         for entry in os.scandir(self._inp_pt):
             self.add_depot(entry.path)
 
@@ -129,8 +130,7 @@ class RPAPathwork(RKC):
             self.raw_inp = pt(self.raw_inp).as_posix()
 
     def pathworker(self):
-        """
-        This prepairs the given path and output dir. It will dicover if the input
+        """This prepairs the given path and output dir. It dicovers if the input
         is a file or directory and takes the according actions.
         """
         self.transf_winpt()
@@ -270,7 +270,7 @@ class RPAKit(RKC):
         return offset, key
 
     def collect_register(self):
-        """Gets the depot's register."""
+        """Gets the depot's register through unzip and unpickle."""
         offset, key = self.get_cipher()
         with pt(self.depot).open('rb') as ofi:
             ofi.seek(offset)
@@ -309,8 +309,7 @@ class RPAKit(RKC):
         return magic
 
     def guess_version(self):
-        """
-        Determines archive version from header or suffix and pairs alias variants
+        """Determines archive version from header/suffix and pairs alias variants
         with a main format id.
         """
         magic = self.get_header_start()
@@ -486,9 +485,9 @@ def parse_args():
                                          "either -e, -l or -t is required.")
 
     desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
-    rpa_kit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
-    rpa_kit.py -e /home/{USERNAME}/otherdir/file.rpa
-    rpa_kit.py -t c:/Users/{username}/my_folder/A123.rpa"""
+    rpakit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
+    rpakit.py -t /home/{USERNAME}/otherdir/file.rpa
+    rpakit.py -e c:/Users/{USERNAME}/my_folder/A123.rpa"""
     epi = "Standard output dir is set to ´{Target}/rpakit_out/´. Change with option -o."
     aps = argparse.ArgumentParser(description=desc, epilog=epi, formatter_class=argparse.RawTextHelpFormatter)
     aps.add_argument('inpath',
