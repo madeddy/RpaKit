@@ -44,3 +44,21 @@ console. The verboseness was also set to highest level (tell everything).
 ## API
 
   TBD
+
+## Legal
+### License
+
+`RPA Kit` is licensed under the GPLv3. See the LICENSE file for more details.
+
+### Disclaimer
+
+This program is intended for people who have the legal rights or the consent of
+the authors to access or decompress the target files. Any illegal or otherwise
+unindented usage of this software is highly discouraged and has here no support.
+
+### Credits
+
+This software was developed with some orientation on "RenPy's" and "rpatool's" code
+for work with RPA files.
+Credits for the development of the RenPy archive format belong to the contributors
+of the RenPy project.
