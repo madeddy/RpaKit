@@ -21,7 +21,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.24.0-alpha'
+__version__ = '0.25.0-alpha'
 
 
 class RKC:
@@ -29,7 +29,7 @@ class RKC:
     "Rpa Kit Common" is the base class which provides some shared methods and
     variables for the child classes.
     """
-    name = 'RpaKit'
+    name = "RpaKit"
     verbosity = 1
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
     out_pt = None
@@ -75,9 +75,9 @@ class RKC:
 
 class RPAPathwork(RKC):
     """
-    Support class for RPA Kit's path related work. Needet inputs (file/dir path)
-    are internaly providet. If input is a dir it searches there for archives,
-    checks and filters them and puts them in a list.
+    Support class for RPA Kit's path related preparation. Needet inputs
+    (file-/dir path) are internaly providet. If input is a dir it searches
+    there for archives, checks and filters them and puts them in a list.
     A archiv as input skips the search part.
     """
 
@@ -90,12 +90,13 @@ class RPAPathwork(RKC):
 
     def make_output(self):
         """Constructs outdir and outpath."""
+        # TODO: move outdir to cls arg
         if self.outdir is None:
             self.outdir = 'rpakit_out'
         self.out_pt = pt(self._inp_pt) /  self.outdir
         self.make_dirstruct(self.out_pt)
 
-    def ident_paired_rpa(self):
+    def ident_paired_depot(self):
         """Identifys rpa1 type paired archives and removes one from the list."""
         lst_copy = self.dep_lst
         for entry in list(lst_copy):
@@ -123,7 +124,7 @@ class RPAPathwork(RKC):
             self.add_depot(entry.path)
 
     def transf_winpt(self):
-        """Check if WinOS and a win-path was given. Returns as posix."""
+        """Check if sys is WinOS and if inp is a win-path. Returns as posix."""
         if sys.platform.startswith('win32') and '\\' in self.raw_inp:
             self.inf(2, "The input appears to be a windows path. It should be" \
                      "given in posix style to minimize the error risk.", m_sort='note')
@@ -149,7 +150,7 @@ class RPAPathwork(RKC):
             print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
 
         self.make_output()
-        self.ident_paired_rpa()
+        self.ident_paired_depot()
 
         if RKC.count['dep_found'] > 0:
             self.inf(1, f"{RKC.count['dep_found']} RPA files to process:\n"
@@ -344,17 +345,27 @@ class RPAKit(RKC):
             ofi.seek(0)
             self._header = ofi.readline()
 
+    def check_out_pt(self, f_pt):
+        """Checks output path and if needet renames file."""
+        tmp_pt = pt(self.out_pt / f_pt)
+        if pt(tmp_pt).is_dir() or f_pt == "":
+            rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
+            tmp_pt = pt(self.out_pt / rand_fn)
+            self.inf(2, f"Possible invalid archive! A filename was replaced with the new name '{rand_fn}'.")
+        return tmp_pt
+
     def unpack_depot(self):
         """Manages the unpacking of the depot files."""
         for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
             try:
-                self.make_dirstruct(pt(self.out_pt) / pt(file_pt).parent)
+                tmp_path = self.check_out_pt(file_pt)
+                self.make_dirstruct(pt(tmp_path).parent)
 
                 tmp_file = self.extract_data(file_pt, file_data)
                 self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
                          f"{file_pt:>4}")
 
-                with pt(self.out_pt / file_pt).open('wb') as ofi:
+                with pt(tmp_path).open('wb') as ofi:
                     ofi.write(tmp_file)
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
@@ -368,8 +379,8 @@ class RPAKit(RKC):
     def show_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
         self.inf(2, "Listing archive files:")
-        for item in sorted(self._reg.keys()):
-            print(f"{item}")
+        for (_fn, _fidx) in self._reg.items():  # sorted(self._reg.keys()):
+            print(f"Filename: {_fn}  Index data: {_fidx}")
         self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
                  f"{len(self._reg.keys())} files.")
 
