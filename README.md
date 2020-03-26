@@ -1,6 +1,5 @@
-[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.24.0_alpha-development-orange.svg)](https://shields.io/) ![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit)
-
-[]([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))
+[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.25.0_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
+<!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))  -->
 
 # RPA Kit
 RPA Kit is a small application for decompressing RenPy archives.
@@ -53,14 +52,18 @@ console. The verboseness was also set to highest level (tell everything).
 
   TBD
 
+(The API is very possible not final, so any description here would be a waste of time.)
+
 ### Motivation - Why another RPA unpacker?
-This began in 2017 as a learning experience for Python coding and understanding
-RenPy internals. Its was nothing mor as a wrapper for a third party RPA decompressor with
-some extra functionality like feeding it simply a directory with rpa files.
+This began in 2017 with a few lines of code and as another learning experience in Python
+coding and understanding RenPy internals.
+Basicly it was nothing more as a wrapper for a third party RPA decompressor with
+some extra functionality like feeding it simply a directory with rpa files or additional
+info output.
 
 In fall 2019 i noticed the changed usability respectively unmaintained state of the
-available apps. There was also the cumbersome extensibility and not working functionality
-which increasingly dissatisfied me.
+available apps for RPA work. There was also the cumbersome extensibility and not working
+functionality which increasingly dissatisfied me.
 
 I began at first to change and extend _rpatool_ for my own needs and from there it got
 fast out of control. I ended up with a completly rewritten script. Hopefully also of use
@@ -79,7 +82,7 @@ unindented usage of this software is highly discouraged and has here no support.
 
 ### Credits
 
-This software was developed with some orientation on [RenPy's](github.com/renpy/renpy) and [rpatool's](github.com/shizmob/rpatool) code
-for work with RPA files.
-Credits for the development of the RenPy archive format belong to the contributors
-of the RenPy project.
+This software was developed with some orientation on [RenPy's](github.com/renpy/renpy) and [rpatool's](github.com/shizmob/rpatool) code for
+the work with RPA files.
+Credits for the development of the RenPy archive format belong to the contributors of
+the RenPy project.
