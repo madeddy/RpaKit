@@ -21,7 +21,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.25.0-alpha'
+__version__ = '0.26.0-alpha'
 
 
 class RKC:
@@ -130,10 +130,17 @@ class RPAPathwork(RKC):
                      "given in posix style to minimize the error risk.", m_sort='note')
             self.raw_inp = pt(self.raw_inp).as_posix()
 
+    def check_inpath(self):
+        """Helper to check if given path exist."""
+        if not self.raw_inp.exists() or self.raw_inp.is_symlink():
+            raise FileNotFoundError(f"Could the given path object ({self.raw_inp})" \
+                                    "not find! Check the given input.")
+
     def pathworker(self):
         """This prepairs the given path and output dir. It dicovers if the input
         is a file or directory and takes the according actions.
         """
+        self.check_inpath()
         self.transf_winpt()
         self.raw_inp = pt(self.raw_inp).resolve(strict=True)
 
@@ -477,17 +484,7 @@ class RKmain(RPAPathwork, RPAKit):
 
 
 def parse_args():
-    """
-    Argument parser and test for input path to provide functionality for the
-    command line interface.
-    """
-    def check_path(inp):
-        """Helper to check if given path exist."""
-        if pt(inp).exists() and not pt(inp).is_symlink():
-            return inp
-        raise FileNotFoundError(f"Could the given path object ({inp}) not find! " \
-                                "Check the given input.")
-
+    """Argument parser to provide functionality for the command-line interface."""
     def valid_switch():
         """Helper function to determine if a task is choosen."""
         if not args.task:
@@ -503,8 +500,9 @@ def parse_args():
     aps = argparse.ArgumentParser(description=desc, epilog=epi, formatter_class=argparse.RawTextHelpFormatter)
     aps.add_argument('inpath',
                      metavar='Target',
-                     type=check_path,
-                     help='Directory path to search OR name of a RPA file to unpack.')
+                     action='store',
+                     type=str,
+                     help='Directory path (to search) OR rpa file path to unpack.')
     opts = aps.add_mutually_exclusive_group()
     opts.add_argument('-e', '--expand',
                       dest='task',
