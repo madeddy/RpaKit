@@ -21,7 +21,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.26.0-alpha'
+__version__ = '0.27.0-alpha'
 
 
 class RKC:
@@ -68,9 +68,9 @@ class RKC:
     @classmethod
     def make_dirstruct(cls, dst):
         """Constructs any needet output directorys if they not already exist."""
-        if not pt(dst).exists():
+        if not dst.exists():
             cls.inf(2, f"Creating directory structure for: {dst}")
-            pt(dst).mkdir(parents=True, exist_ok=True)
+            dst.mkdir(parents=True, exist_ok=True)
 
 
 class RPAPathwork(RKC):
@@ -93,15 +93,15 @@ class RPAPathwork(RKC):
         # TODO: move outdir to cls arg
         if self.outdir is None:
             self.outdir = 'rpakit_out'
-        self.out_pt = pt(self._inp_pt) /  self.outdir
+        self.out_pt = self._inp_pt /  self.outdir
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
         """Identifys rpa1 type paired archives and removes one from the list."""
         lst_copy = self.dep_lst
         for entry in list(lst_copy):
-            if pt(entry).suffix == '.rpi':
-                twin = str(pt(entry).with_suffix('.rpa'))
+            if entry.suffix == '.rpi':
+                twin = str(entry.with_suffix('.rpa'))
                 if twin in self.dep_lst:
                     self.dep_lst.remove(twin)
                     RKC.count['dep_found'] -= 1
@@ -109,7 +109,7 @@ class RPAPathwork(RKC):
     @staticmethod
     def valid_archives(entry):
         """Checks path objects for identity by extension. RPA have no real magic num."""
-        return bool(pt(entry).is_file() and pt(entry).suffix
+        return bool(entry.is_file() and entry.suffix
                     in ['.rpa', '.rpi', '.rpc'])
 
     def add_depot(self, depot):
@@ -121,14 +121,15 @@ class RPAPathwork(RKC):
     def search_rpa(self):
         """Searches dir and calls another method which identifys RPA files."""
         for entry in os.scandir(self._inp_pt):
-            self.add_depot(entry.path)
+            entry_pth = pt(entry.path)
+            self.add_depot(entry_pth)
 
     def transf_winpt(self):
         """Check if sys is WinOS and if inp is a win-path. Returns as posix."""
         if sys.platform.startswith('win32') and '\\' in self.raw_inp:
             self.inf(2, "The input appears to be a windows path. It should be" \
                      "given in posix style to minimize the error risk.", m_sort='note')
-            self.raw_inp = pt(self.raw_inp).as_posix()
+            self.raw_inp = self.raw_inp.as_posix()
 
     def check_inpath(self):
         """Helper to check if given path exist."""
@@ -142,15 +143,15 @@ class RPAPathwork(RKC):
         """
         self.check_inpath()
         self.transf_winpt()
-        self.raw_inp = pt(self.raw_inp).resolve(strict=True)
+        self.raw_inp = self.raw_inp.resolve(strict=True)
 
         try:
-            if pt(self.raw_inp).is_dir():
+            if self.raw_inp.is_dir():
                 self._inp_pt = self.raw_inp
                 self.search_rpa()
-            elif pt(self.raw_inp).is_file():
+            elif self.raw_inp.is_file():
                 self.add_depot(self.raw_inp)
-                self._inp_pt = pt(self.raw_inp).parent
+                self._inp_pt = self.raw_inp.parent
             else:
                 raise FileNotFoundError("File not found!")
         except Exception as err:  # pylint:disable=w0703
@@ -227,10 +228,10 @@ class RPAKit(RKC):
 
     def extract_data(self, file_pt, file_data):
         """Extracts the archive data to a temp file."""
-        if pt(self.depot).suffix == '.rpi':
-            self.depot = pt(self.depot).with_suffix('.rpa')
+        if self.depot.suffix == '.rpi':
+            self.depot = self.depot.with_suffix('.rpa')
 
-        with pt(self.depot).open('rb') as ofi:
+        with self.depot.open('rb') as ofi:
             if len(self._reg[file_pt]) == 1:
                 ofs, leg, pre = file_data[0]
                 ofi.seek(ofs)
@@ -280,7 +281,7 @@ class RPAKit(RKC):
     def collect_register(self):
         """Gets the depot's register through unzip and unpickle."""
         offset, key = self.get_cipher()
-        with pt(self.depot).open('rb') as ofi:
+        with self.depot.open('rb') as ofi:
             ofi.seek(offset)
             self._reg = pickle.loads(zlib.decompress(ofi.read()), encoding='bytes')
 
@@ -328,7 +329,7 @@ class RPAKit(RKC):
 
             # NOTE:If no version is found the dict is empty; searching with a key
             # slice for 'rpaid' excepts a KeyError (better init dict with key?)
-            if 'rpa1' in self._version.values() and pt(self.depot).suffix != '.rpi':
+            if 'rpa1' in self._version.values() and self.depot.suffix != '.rpi':
                 # self._version = {}
                 self._version.clear()
             elif not self._version:
@@ -348,16 +349,16 @@ class RPAKit(RKC):
 
     def get_header(self):
         """Opens file and reads header line in."""
-        with pt(self.depot).open('rb') as ofi:
+        with self.depot.open('rb') as ofi:
             ofi.seek(0)
             self._header = ofi.readline()
 
     def check_out_pt(self, f_pt):
         """Checks output path and if needet renames file."""
-        tmp_pt = pt(self.out_pt / f_pt)
-        if pt(tmp_pt).is_dir() or f_pt == "":
+        tmp_pt = self.out_pt / f_pt
+        if tmp_pt.is_dir() or f_pt == "":
             rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
-            tmp_pt = pt(self.out_pt / rand_fn)
+            tmp_pt = self.out_pt / rand_fn
             self.inf(2, f"Possible invalid archive! A filename was replaced with the new name '{rand_fn}'.")
         return tmp_pt
 
@@ -366,7 +367,7 @@ class RPAKit(RKC):
         for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
             try:
                 tmp_path = self.check_out_pt(file_pt)
-                self.make_dirstruct(pt(tmp_path).parent)
+                self.make_dirstruct(tmp_path.parent)
 
                 tmp_file = self.extract_data(file_pt, file_data)
                 self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
@@ -377,7 +378,7 @@ class RPAKit(RKC):
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
-        if any(pt(self.out_pt).iterdir()):
+        if any(self.out_pt.iterdir()):
             self.inf(2, f"Unpacked {RKC.count['fle_total']} files from archive: " \
                      f"{self.strify(self.depot)}")
         else:
@@ -388,12 +389,12 @@ class RPAKit(RKC):
         self.inf(2, "Listing archive files:")
         for (_fn, _fidx) in self._reg.items():  # sorted(self._reg.keys()):
             print(f"Filename: {_fn}  Index data: {_fidx}")
-        self.inf(1, f"Archive {self.strify(pt(self.depot).name)} holds " \
+        self.inf(1, f"Archive {self.strify(self.depot.name)} holds " \
                  f"{len(self._reg.keys())} files.")
 
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
-        self.inf(0, f"For archive >{pt(self.depot).name}< the identified version " \
+        self.inf(0, f"For archive >{self.depot.name}< the identified version " \
                  f"variant is: {self._version['desc']!r}")
 
     def init_depot(self):
@@ -428,9 +429,9 @@ class RKmain(RPAPathwork, RPAKit):
         if verbose is not None:
             RKC.verbosity = verbose
         super().__init__()
-        self.raw_inp = inpath
+        self.raw_inp = pt(inpath)
         if outdir is not None:
-            self.outdir = outdir
+            self.outdir = pt(outdir)
         self.task = kwargs.get('task')
 
     def done_msg(self):
@@ -445,9 +446,9 @@ class RKmain(RPAPathwork, RPAKit):
 
     def cfg_control(self):
         """Processes input, yields depot's to the functions."""
-        if pt(self.raw_inp).is_file():
+        if self.raw_inp.is_file():
             self.inf(2, f"Input is a file. Processing {self.raw_inp}.")
-        elif pt(self.raw_inp).is_dir():
+        elif self.raw_inp.is_dir():
             self.inf(2, f"Input is a directory. Searching for RPA in {self.raw_inp} " \
                      "and below.")
 
