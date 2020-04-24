@@ -24,7 +24,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.28.0-alpha'
+__version__ = '0.28.1-alpha'
 
 
 class RKC:
@@ -55,8 +55,8 @@ class RKC:
     @classmethod
     def inf(cls, inf_level, msg, m_sort=None):
         """Outputs by the current verboseness level allowed infos."""
-        if cls.verbosity >= inf_level:  # self.tty ?
-            ind1 = f"{cls.name}: > "
+        if cls.verbosity >= inf_level:  # TODO: use self.tty ?
+            ind1 = f"{cls.name}:\x1b[32m >> \x1b[0m"
             ind2 = " " * 12
             if m_sort == 'note':
                 ind1 = f"{cls.name}:\x1b[93m NOTE \x1b[0m> "
@@ -94,7 +94,7 @@ class RPAPathwork(RKC):
 
     def make_output(self):
         """Constructs outdir and outpath."""
-        # TODO: move outdir to cls arg
+        # TODO: move outdir to cls arg; check, init could overwrite user outdir
         if self.outdir is None:
             self.outdir = 'rpakit_out'
         self.out_pt = self._inp_pt /  self.outdir
@@ -231,19 +231,19 @@ class RPAKit(RKC):
         self._reg.clear()
         self.dep_initstate = None
 
-    def extract_data(self, file_pt, file_data):
+    def extract_data(self, file_pt, pos_stats):
         """Extracts the archive data to a temp file."""
         if self.depot.suffix == '.rpi':
             self.depot = self.depot.with_suffix('.rpa')
 
         with self.depot.open('rb') as ofi:
             if len(self._reg[file_pt]) == 1:
-                ofs, leg, pre = file_data[0]
+                ofs, leg, pre = pos_stats[0]
                 ofi.seek(ofs)
                 tmp_file = pre + ofi.read(leg - len(pre))
             else:
                 part = []
-                for ofs, leg, pre in file_data:
+                for ofs, leg, pre in pos_stats:
                     ofi.seek(ofs)
                     part.append(ofi.read(leg))
                     tmp_file = pre.join(part)
@@ -265,7 +265,7 @@ class RPAKit(RKC):
 
     def get_cipher(self):
         """Fetches the cipher for the register from the header infos."""
-        # NOTE: Slicing is error prone; perhaps use of "split to parts" as a fallback
+        # NOTE: Slicing is error prone; perhaps use of "split parts" as a fallback
         # in the excepts is useful or even reverse the order of both
         offset, key = 0, None
         try:
@@ -276,7 +276,7 @@ class RPAKit(RKC):
                     key = int(self._header[slky], 16)
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
-            raise f"{err}: Problem with the format data encountered. Perhabs " \
+            raise f"{err}: Problem with the format data encountered. Perhaps " \
                     "the RPA is malformed."
         except TypeError as err:
             raise f"{err}: Somehow the wrong data types had a meeting in here. " \
@@ -318,7 +318,7 @@ class RPAKit(RKC):
                 magic = self._header[:1].decode()
             except UnicodeError:
                 self.inf(0, "UnicodeError: Header unreadable. Tested file is " \
-                         "perhabs no RPA or very weird.", m_sort='warn')
+                         "perhaps no RPA or very weird.", m_sort='warn')
                 magic = ''
         return magic
 
@@ -369,17 +369,17 @@ class RPAKit(RKC):
 
     def unpack_depot(self):
         """Manages the unpacking of the depot files."""
-        for file_num, (file_pt, file_data) in enumerate(self._reg.items()):
+        for file_num, (file_pt, pos_stats) in enumerate(self._reg.items()):
             try:
                 tmp_path = self.check_out_pt(file_pt)
                 self.make_dirstruct(tmp_path.parent)
 
-                tmp_file = self.extract_data(file_pt, file_data)
+                tmp_file_data = self.extract_data(file_pt, pos_stats)
                 self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
                          f"{file_pt:>4}")
 
-                with pt(tmp_path).open('wb') as ofi:
-                    ofi.write(tmp_file)
+                with tmp_path.open('wb') as ofi:
+                    ofi.write(tmp_file_data)
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
@@ -400,7 +400,7 @@ class RPAKit(RKC):
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
         self.inf(0, f"For archive >{self.depot.name}< the identified version " \
-                 f"variant is: {self._version['desc']!r}")
+                 f"variant is: \x1b[44m{self._version['desc']!r}\x1b[0m")
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
@@ -557,7 +557,7 @@ def parse_args():
                       const='sim',
                       help='Unpacks all stored files just temporary.')
     aps.add_argument("-o", "--outdir",
-                     action="store",
+                     action='store',
                      type=str,
                      help="Extracts to the given path instead of standard.")
     aps.add_argument('--verbose',
