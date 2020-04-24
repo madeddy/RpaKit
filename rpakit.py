@@ -3,7 +3,8 @@
 """
 RPAKit is a small app which searches in a given path(if not file) RenPy archives
 and decompresses the content in a custom-made subdirectory. Just listing without
-writing or testing & identifying the archiv is also possible.
+writing or testing & identifying the archiv or simulating the expand process is
+also possible.
 """
 
 # pylint:disable=c0301, c0116, w0511, w0612, r0902, r0903
@@ -12,6 +13,8 @@ import os
 import sys
 import argparse
 from pathlib import Path as pt
+import tempfile
+import shutil
 import pickle
 import zlib
 import textwrap
@@ -21,7 +24,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.27.0-alpha'
+__version__ = '0.28.0-alpha'
 
 
 class RKC:
@@ -32,6 +35,7 @@ class RKC:
     name = "RpaKit"
     verbosity = 1
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
+    rk_tmp_dir = None
     out_pt = None
 
 
@@ -156,9 +160,10 @@ class RPAPathwork(RKC):
                 raise FileNotFoundError("File not found!")
         except Exception as err:  # pylint:disable=w0703
             print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
-
-        self.make_output()
         self.ident_paired_depot()
+
+        self.rk_tmp_dir = pt(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
+        self.make_output()
 
         if RKC.count['dep_found'] > 0:
             self.inf(1, f"{RKC.count['dep_found']} RPA files to process:\n"
@@ -355,10 +360,10 @@ class RPAKit(RKC):
 
     def check_out_pt(self, f_pt):
         """Checks output path and if needet renames file."""
-        tmp_pt = self.out_pt / f_pt
+        tmp_pt = self.rk_tmp_dir / f_pt
         if tmp_pt.is_dir() or f_pt == "":
             rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
-            tmp_pt = self.out_pt / rand_fn
+            tmp_pt = self.rk_tmp_dir / rand_fn
             self.inf(2, f"Possible invalid archive! A filename was replaced with the new name '{rand_fn}'.")
         return tmp_pt
 
@@ -418,11 +423,13 @@ class RPAKit(RKC):
 
 class RKmain(RPAPathwork, RPAKit):
     """
-    Main class to process args and executing the related methods. Args:
-    Positional: {inp} takes `path` or `path + filename.suffix`
-    Keyword: {task=['exp'|'lst'|'tst']} expand/list content of the archiv(s) or test it
-             {outdir=NEWDIR} changes output directory for the archiv content
-             {verbose=[0|1|2]} information output level; defaults to 1
+    Main class to process args and executing the related methods. Parameter:
+    Positional:
+        {inp} takes `path` or `path/filename.suffix`
+    Keyword:
+        {task=['exp'|'lst'|'tst'|'sim']} the intendet request for the app run
+        {outdir=NEWDIR} changes output directory for the archiv content
+        {verbose=[0|1|2]} information output level; defaults to 1
     """
 
     def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
@@ -433,6 +440,7 @@ class RKmain(RPAPathwork, RPAKit):
         if outdir is not None:
             self.outdir = pt(outdir)
         self.task = kwargs.get('task')
+        self.simulate = False
 
     def done_msg(self):
         """Gives a final info when all is done."""
@@ -441,8 +449,27 @@ class RKmain(RPAPathwork, RPAKit):
                 self.inf(0, f" Done. We unpacked {RKC.count['dep_done']} archive(s).")
             else:
                 self.inf(0, f"Oops! No archives where processed...")
+        elif self.task == 'sim':
+            self.inf(0, f"We successful simulated the unpacking of" \
+                     f" {RKC.count['dep_done']} archive(s).")
         elif self.task  in ['lst', 'tst']:
             self.inf(0, f"Completed!")
+
+    def cleanup(self):
+        """Removes temporary content and in simulate mode also the outdir."""
+        if not self.simulate:
+            # NOTE FIXME: Converting 'src' to str to avoid bugs.python.org/issue32689
+            # fixed in py 3.9; if its standard we use pathlikes
+            for entry in self.rk_tmp_dir.iterdir():
+                shutil.move(self.strify(entry), self.out_pt)
+        # TODO: write code to check output
+        else:
+            self.out_pt.rmdir()
+
+        if not any(self.rk_tmp_dir.iterdir()):
+            self.rk_tmp_dir.rmdir()
+        else:
+            shutil.rmtree(self.rk_tmp_dir)
 
     def cfg_control(self):
         """Processes input, yields depot's to the functions."""
@@ -476,11 +503,15 @@ class RKmain(RPAPathwork, RPAKit):
                 self.show_depot_content()
             elif self.task == 'tst':
                 self.test_depot()
+            elif self.task == 'sim':
+                self.unpack_depot()
+                self.simulate = True
 
             RKC.count['dep_done'] += 1
             self.inf(1, f"[{RKC.count['dep_done'] / float(RKC.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
             self.clear_rk_vars()
 
+        self.cleanup()
         self.done_msg()
 
 
@@ -520,6 +551,11 @@ def parse_args():
                       action='store_const',
                       const='tst',
                       help='Tests if archive(s) are a known format.')
+    opts.add_argument('-s', '--simulate',
+                      dest='task',
+                      action='store_const',
+                      const='sim',
+                      help='Unpacks all stored files just temporary.')
     aps.add_argument("-o", "--outdir",
                      action="store",
                      type=str,
