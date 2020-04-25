@@ -1,4 +1,4 @@
-[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.25.0_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
+[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.30.3_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
 <!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))  -->
 
 # RPA Kit
@@ -21,6 +21,7 @@ tasks:
   -e, --expand          Unpacks all stored files.
   -l, --list            Gives a listing of all stored files.
   -t, --test            Tests if archive(s) are a known format.
+  -s, --simulate        Simulates the expand process.
 
 optional arguments:
   -o, --outdir OUTPUT   Extracts to the given path instead of standard.
@@ -54,20 +55,23 @@ console. The verboseness was also set to highest level (tell everything).
 
 (The API is very possible not final, so any description here would be a waste of time.)
 
-### Motivation - Why another RPA unpacker?
+### Motivation - _Why another RPA unpacker?_
 This began in 2017 with a few lines of code and as another learning experience in Python
-coding and understanding RenPy internals.
-Basicly it was nothing more as a wrapper for a third party RPA decompressor with
-some extra functionality like feeding it simply a directory with rpa files or additional
-info output.
+coding and to understand some more about RenPy internals. Basicly i extended _rpatool_
+with some extras.
 
-In fall 2019 i noticed the changed usability respectively unmaintained state of the
-available apps for RPA work. There was also the cumbersome extensibility and not working
-functionality which increasingly dissatisfied me.
+Over time i hit more walls with the codebase and the available apps for RPA work where of
+limited usability to me. Unmaintained state, cumbersome extensibility and not working
+functionality increasingly dissatisfied me.
+Some whishes where:
+- feeding it simply a directory with rpa files instead a single file
+- support for more rpa formats
+- easy extensibility for new rpa formats
+- additional info output
 
-I began at first to change and extend _rpatool_ for my own needs and from there it got
-fast out of control. I ended up with a completly rewritten script. Hopefully also of use
-to other people.
+Fall 2019 i began to do serious changes and extensions on _rpatools_ api. From there it
+got fast out of control and i ended up with a completly rewritten app. Hopefully also
+of use to other people.
 
 ## Legal
 ### License
