@@ -22,10 +22,10 @@ import textwrap
 
 
 __title__ = 'RPA Kit'
-__license__ = 'GPLv3'
+__license__ = 'Apache-2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.30.2-alpha'
+__version__ = '0.30.3-alpha'
 
 
 class RKC:
@@ -98,7 +98,7 @@ class RPAPathwork(RKC):
         """Removes temporary content and in simulate mode also the outdir."""
         if self.task == 'exp':
             # NOTE FIXME: Converting 'src' to str to avoid bugs.python.org/issue32689
-            # fixed in py 3.9; if its standard we use pathlikes
+            # fixed in py 3.9; if its standard we use pathlikes as source
             for entry in self.rk_tmp_dir.iterdir():
                 shutil.move(self.strify(entry), self.out_pt)
         # TODO: write code to check output
