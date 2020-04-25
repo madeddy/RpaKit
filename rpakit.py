@@ -24,7 +24,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.30.0-alpha'
+__version__ = '0.30.1-alpha'
 
 
 class RKC:
@@ -470,11 +470,17 @@ class RKmain(RPAPathwork, RPAKit):
         elif self.task  in ['lst', 'tst']:
             self.inf(0, f"Completed!")
 
+    def begin_msg(self):
+        """Outputs a info  about the start state if verbosity is high."""
         if self.raw_inp.is_file():
             self.inf(2, f"Input is a file. Processing {self.raw_inp}.")
         elif self.raw_inp.is_dir():
             self.inf(2, f"Input is a directory. Searching for RPA in {self.raw_inp} " \
                      "and below.")
+
+    def cfg_control(self):
+        """Processes input, yields depot's to the functions."""
+        self.begin_msg()
 
         try:
             self.pathworker()
@@ -482,6 +488,7 @@ class RKmain(RPAPathwork, RPAKit):
             raise Exception(
                 f"{err}: Error while testing and prepairing input path " \
                 f">{self.raw_inp}< for the main job.")
+        self.inf(1, f"{RKC.name} found {RKC.count['dep_found']} potential archives.")
 
         while self.dep_lst:
             self.depot = self.dep_lst.pop()
@@ -490,7 +497,6 @@ class RKmain(RPAPathwork, RPAKit):
             except OSError as err:
                 raise Exception(f"{err}: Error while opening archive file " \
                                 f">{self.depot}< for initialization.")
-
             if self.dep_initstate is False:
                 continue
 
