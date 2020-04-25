@@ -24,7 +24,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.28.1-alpha'
+__version__ = '0.29.0-alpha'
 
 
 class RKC:
@@ -34,6 +34,7 @@ class RKC:
     """
     name = "RpaKit"
     verbosity = 1
+    outdir = 'rpakit_out'
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
     rk_tmp_dir = None
     out_pt = None
@@ -90,13 +91,9 @@ class RPAPathwork(RKC):
         self.dep_lst = []
         self._inp_pt = None
         self.raw_inp = None
-        self.outdir = None
 
     def make_output(self):
         """Constructs outdir and outpath."""
-        # TODO: move outdir to cls arg; check, init could overwrite user outdir
-        if self.outdir is None:
-            self.outdir = 'rpakit_out'
         self.out_pt = self._inp_pt /  self.outdir
         self.make_dirstruct(self.out_pt)
 
@@ -435,10 +432,10 @@ class RKmain(RPAPathwork, RPAKit):
     def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
         if verbose is not None:
             RKC.verbosity = verbose
+        if outdir:
+            RKC.outdir = pt(outdir)
         super().__init__()
         self.raw_inp = pt(inpath)
-        if outdir is not None:
-            self.outdir = pt(outdir)
         self.task = kwargs.get('task')
         self.simulate = False
 
