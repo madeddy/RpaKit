@@ -8,6 +8,7 @@ also possible.
 """
 
 # pylint:disable=c0301, c0116, w0511, w0612, r0902, r0903
+# TODO: Add functionality to force rpa format version from user input
 
 import os
 import sys
@@ -24,7 +25,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.30.1-alpha'
+__version__ = '0.30.2-alpha'
 
 
 class RKC:
@@ -407,7 +408,7 @@ class RPAKit(RKC):
     def show_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
         self.inf(2, "Listing archive files:")
-        for (_fn, _fidx) in self._reg.items():  # sorted(self._reg.keys()):
+        for (_fn, _fidx) in sorted(self._reg.items()):
             print(f"Filename: {_fn}  Index data: {_fidx}")
         self.inf(1, f"Archive {self.strify(self.depot.name)} holds " \
                  f"{len(self._reg.keys())} files.")
@@ -448,7 +449,7 @@ class RKmain(RPAPathwork, RPAKit):
     """
 
     def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
-        if verbose is not None:
+        if verbose:
             RKC.verbosity = verbose
         if outdir:
             RKC.outdir = pt(outdir)
