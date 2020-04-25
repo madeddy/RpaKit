@@ -24,7 +24,7 @@ __title__ = 'RPA Kit'
 __license__ = 'GPLv3'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.29.0-alpha'
+__version__ = '0.30.0-alpha'
 
 
 class RKC:
@@ -91,6 +91,23 @@ class RPAPathwork(RKC):
         self.dep_lst = []
         self._inp_pt = None
         self.raw_inp = None
+        self.task = None
+
+    def cleanup(self):
+        """Removes temporary content and in simulate mode also the outdir."""
+        if self.task == 'exp':
+            # NOTE FIXME: Converting 'src' to str to avoid bugs.python.org/issue32689
+            # fixed in py 3.9; if its standard we use pathlikes
+            for entry in self.rk_tmp_dir.iterdir():
+                shutil.move(self.strify(entry), self.out_pt)
+        # TODO: write code to check output
+        else:
+            self.out_pt.rmdir()
+
+        if not any(self.rk_tmp_dir.iterdir()):
+            self.rk_tmp_dir.rmdir()
+        else:
+            shutil.rmtree(self.rk_tmp_dir)
 
     def make_output(self):
         """Constructs outdir and outpath."""
@@ -159,8 +176,9 @@ class RPAPathwork(RKC):
             print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
         self.ident_paired_depot()
 
-        self.rk_tmp_dir = pt(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
-        self.make_output()
+        if self.task in ['exp', 'sim']:
+            self.rk_tmp_dir = pt(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
+            self.make_output()
 
         if RKC.count['dep_found'] > 0:
             self.inf(1, f"{RKC.count['dep_found']} RPA files to process:\n"
@@ -437,39 +455,21 @@ class RKmain(RPAPathwork, RPAKit):
         super().__init__()
         self.raw_inp = pt(inpath)
         self.task = kwargs.get('task')
-        self.simulate = False
 
     def done_msg(self):
-        """Gives a final info when all is done."""
-        if self.task == 'exp':
+        """Outputs a info when all is done."""
+        if self.task in ['exp', 'sim']:
             if RKC.count['dep_done'] > 0:
-                self.inf(0, f" Done. We unpacked {RKC.count['dep_done']} archive(s).")
+                if self.task == 'exp':
+                    self.inf(0, f" Done. We unpacked {RKC.count['dep_done']} archive(s).")
+                else:
+                    self.inf(0, f"We successful simulated the unpacking of" \
+                             f" {RKC.count['dep_done']} archive(s).")
             else:
                 self.inf(0, f"Oops! No archives where processed...")
-        elif self.task == 'sim':
-            self.inf(0, f"We successful simulated the unpacking of" \
-                     f" {RKC.count['dep_done']} archive(s).")
         elif self.task  in ['lst', 'tst']:
             self.inf(0, f"Completed!")
 
-    def cleanup(self):
-        """Removes temporary content and in simulate mode also the outdir."""
-        if not self.simulate:
-            # NOTE FIXME: Converting 'src' to str to avoid bugs.python.org/issue32689
-            # fixed in py 3.9; if its standard we use pathlikes
-            for entry in self.rk_tmp_dir.iterdir():
-                shutil.move(self.strify(entry), self.out_pt)
-        # TODO: write code to check output
-        else:
-            self.out_pt.rmdir()
-
-        if not any(self.rk_tmp_dir.iterdir()):
-            self.rk_tmp_dir.rmdir()
-        else:
-            shutil.rmtree(self.rk_tmp_dir)
-
-    def cfg_control(self):
-        """Processes input, yields depot's to the functions."""
         if self.raw_inp.is_file():
             self.inf(2, f"Input is a file. Processing {self.raw_inp}.")
         elif self.raw_inp.is_dir():
@@ -494,21 +494,19 @@ class RKmain(RPAPathwork, RPAKit):
             if self.dep_initstate is False:
                 continue
 
-            if self.task == 'exp':
+            if self.task in ['exp', 'sim']:
                 self.unpack_depot()
             elif self.task == 'lst':
                 self.show_depot_content()
             elif self.task == 'tst':
                 self.test_depot()
-            elif self.task == 'sim':
-                self.unpack_depot()
-                self.simulate = True
 
             RKC.count['dep_done'] += 1
             self.inf(1, f"[{RKC.count['dep_done'] / float(RKC.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
             self.clear_rk_vars()
 
-        self.cleanup()
+        if self.task in ['exp', 'sim']:
+            self.cleanup()
         self.done_msg()
 
 
