@@ -25,7 +25,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache-2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.32.0-alpha'
+__version__ = '0.33.0-alpha'
 
 
 class RkCommon:
@@ -118,6 +118,10 @@ class RkPathWork(RkCommon):
     def make_output(self):
         """Constructs outdir and outpath."""
         self.out_pt = self._inp_pt /  self.outdir
+        if self.out_pt.exists():
+            self.inf(0, f"The output directory >{self.out_pt}< exists already." \
+                     "Rename or remove it.", m_sort='warn')
+            raise FileExistsError
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
@@ -195,8 +199,8 @@ class RkPathWork(RkCommon):
 
 class RkDepotWork(RkCommon):
     """
-    The class for analyzing and unpacking RPA files. All needet inputs
-    (depot, output path) are internaly providet.
+    The class for analyzing, testing and unpacking RPA files. All needet
+    inputs (depot, output path) are internaly providet.
     """
 
     _rpaformats = {'x': {'rpaid': 'rpa1',
