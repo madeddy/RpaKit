@@ -25,7 +25,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache-2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.30.3-alpha'
+__version__ = '0.31.0-alpha'
 
 
 class RKC:
@@ -77,6 +77,11 @@ class RKC:
         if not dst.exists():
             cls.inf(2, f"Creating directory structure for: {dst}")
             dst.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def telltale(cls, fraction, total, obj):
+        """Returns a percentage-meter like output for use in tty."""
+        return f"[\x1b[44m{fraction / float(total):05.1%}\x1b[0m] {cls.strify(obj):>4}"
 
 
 class RPAPathwork(RKC):
@@ -391,8 +396,7 @@ class RPAKit(RKC):
                 self.make_dirstruct(tmp_path.parent)
 
                 tmp_file_data = self.extract_data(file_pt, pos_stats)
-                self.inf(2, f"[{file_num / float(RKC.count['fle_total']):05.1%}] " \
-                         f"{file_pt:>4}")
+                self.inf(2, f"{self.telltale(file_num, RkCommon.count['fle_total'], file_pt)}")
 
                 with tmp_path.open('wb') as ofi:
                     ofi.write(tmp_file_data)
@@ -508,8 +512,8 @@ class RKmain(RPAPathwork, RPAKit):
             elif self.task == 'tst':
                 self.test_depot()
 
-            RKC.count['dep_done'] += 1
-            self.inf(1, f"[{RKC.count['dep_done'] / float(RKC.count['dep_found']):05.1%}] {self.strify(self.depot):>4}")
+            RkCommon.count['dep_done'] += 1
+            self.inf(1, f"{self.telltale(RkCommon.count['dep_done'], RkCommon.count['dep_found'], self.depot)}")
             self.clear_rk_vars()
 
         if self.task in ['exp', 'sim']:
