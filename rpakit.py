@@ -25,10 +25,10 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache-2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.31.0-alpha'
+__version__ = '0.32.0-alpha'
 
 
-class RKC:
+class RkCommon:
     """
     "Rpa Kit Common" is the base class which provides some shared methods and
     variables for the child classes.
@@ -84,11 +84,11 @@ class RKC:
         return f"[\x1b[44m{fraction / float(total):05.1%}\x1b[0m] {cls.strify(obj):>4}"
 
 
-class RPAPathwork(RKC):
+class RkPathWork(RkCommon):
     """
-    Support class for RPA Kit's path related preparation. Needet inputs
-    (file-/dir path) are internaly providet. If input is a dir it searches
-    there for archives, checks and filters them and puts them in a list.
+    Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path)
+    are internaly providet. If input is a dir it searches there for archives,
+    checks and filters them and puts them in a list.
     A archiv as input skips the search part.
     """
 
@@ -128,7 +128,7 @@ class RPAPathwork(RKC):
                 twin = str(entry.with_suffix('.rpa'))
                 if twin in self.dep_lst:
                     self.dep_lst.remove(twin)
-                    RKC.count['dep_found'] -= 1
+                    RkCommon.count['dep_found'] -= 1
 
     @staticmethod
     def valid_archives(entry):
@@ -140,7 +140,7 @@ class RPAPathwork(RKC):
         """Adds by extension as RPA identified files to the depot list."""
         if self.valid_archives(depot):
             self.dep_lst.append(depot)
-            RKC.count['dep_found'] += 1
+            RkCommon.count['dep_found'] += 1
 
     def search_rpa(self):
         """Searches dir and calls another method which identifys RPA files."""
@@ -186,14 +186,14 @@ class RPAPathwork(RKC):
             self.rk_tmp_dir = pt(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
             self.make_output()
 
-        if RKC.count['dep_found'] > 0:
-            self.inf(1, f"{RKC.count['dep_found']} RPA files to process:\n"
+        if RkCommon.count['dep_found'] > 0:
+            self.inf(1, f"{RkCommon.count['dep_found']} RPA files to process:\n"
                      f"{chr(10).join([*map(str, self.dep_lst)])}", m_sort='raw')
         else:
             self.inf(1, "No RPA files found. Was the correct path given?")
 
 
-class RPAKit(RKC):
+class RkDepotWork(RkCommon):
     """
     The class for analyzing and unpacking RPA files. All needet inputs
     (depot, output path) are internaly providet.
@@ -404,12 +404,12 @@ class RPAKit(RKC):
                 raise f"{err}: Unknown error while trying to extract a file."
 
         if any(self.out_pt.iterdir()):
-            self.inf(2, f"Unpacked {RKC.count['fle_total']} files from archive: " \
+            self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: " \
                      f"{self.strify(self.depot)}")
         else:
             self.inf(2, "No files from archive unpacked.")
 
-    def show_depot_content(self):
+    def list_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
         self.inf(2, "Listing archive files:")
         for (_fn, _fidx) in sorted(self._reg.items()):
@@ -438,10 +438,10 @@ class RPAKit(RKC):
             self.get_version_specs()
             self.collect_register()
             self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
-            RKC.count['fle_total'] = len(self._reg)
+            RkCommon.count['fle_total'] = len(self._reg)
 
 
-class RKmain(RPAPathwork, RPAKit):
+class RkMain(RkPathWork, RkDepotWork):
     """
     Main class to process args and executing the related methods. Parameter:
     Positional:
@@ -454,9 +454,9 @@ class RKmain(RPAPathwork, RPAKit):
 
     def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
         if verbose:
-            RKC.verbosity = verbose
+            RkCommon.verbosity = verbose
         if outdir:
-            RKC.outdir = pt(outdir)
+            RkCommon.outdir = pt(outdir)
         super().__init__()
         self.raw_inp = pt(inpath)
         self.task = kwargs.get('task')
@@ -464,12 +464,13 @@ class RKmain(RPAPathwork, RPAKit):
     def done_msg(self):
         """Outputs a info when all is done."""
         if self.task in ['exp', 'sim']:
-            if RKC.count['dep_done'] > 0:
+            if RkCommon.count['dep_done'] > 0:
                 if self.task == 'exp':
-                    self.inf(0, f" Done. We unpacked {RKC.count['dep_done']} archive(s).")
+                    self.inf(0, f" Done. We unpacked {RkCommon.count['dep_done']} " \
+                             "archive(s).")
                 else:
                     self.inf(0, f"We successful simulated the unpacking of" \
-                             f" {RKC.count['dep_done']} archive(s).")
+                             f" {RkCommon.count['dep_done']} archive(s).")
             else:
                 self.inf(0, f"Oops! No archives where processed...")
         elif self.task  in ['lst', 'tst']:
@@ -483,7 +484,7 @@ class RKmain(RPAPathwork, RPAKit):
             self.inf(2, f"Input is a directory. Searching for RPA in {self.raw_inp} " \
                      "and below.")
 
-    def cfg_control(self):
+    def rk_control(self):
         """Processes input, yields depot's to the functions."""
         self.begin_msg()
 
@@ -493,7 +494,8 @@ class RKmain(RPAPathwork, RPAKit):
             raise Exception(
                 f"{err}: Error while testing and prepairing input path " \
                 f">{self.raw_inp}< for the main job.")
-        self.inf(1, f"{RKC.name} found {RKC.count['dep_found']} potential archives.")
+        self.inf(1, f"{RkCommon.name} found {RkCommon.count['dep_found']} " \
+                 "potential archives.")
 
         while self.dep_lst:
             self.depot = self.dep_lst.pop()
@@ -508,7 +510,7 @@ class RKmain(RPAPathwork, RPAKit):
             if self.task in ['exp', 'sim']:
                 self.unpack_depot()
             elif self.task == 'lst':
-                self.show_depot_content()
+                self.list_depot_content()
             elif self.task == 'tst':
                 self.test_depot()
 
@@ -583,5 +585,5 @@ if __name__ == '__main__':
     assert sys.version_info >= (3, 6), \
         f"Must be executed in Python 3.6 or later. You are running {sys.version}"
     CFG = parse_args()
-    RKM = RKmain(CFG.inpath, outdir=CFG.outdir, verbose=CFG.verbose, task=CFG.task)
-    RKM.cfg_control()
+    RKM = RkMain(CFG.inpath, outdir=CFG.outdir, verbose=CFG.verbose, task=CFG.task)
+    RKM.rk_control()
