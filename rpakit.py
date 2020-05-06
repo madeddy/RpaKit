@@ -19,13 +19,14 @@ import shutil
 import pickle
 import zlib
 import textwrap
+from colorama import init
 
 
 __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.34.0-alpha'
+__version__ = '0.35.0-alpha'
 
 
 class RkCommon:
@@ -153,7 +154,7 @@ class RkPathWork(RkCommon):
 
     def transf_winpt(self):
         """Check if sys is WinOS and if inp is a win-path. Returns as posix."""
-        if sys.platform.startswith('win32') and '\\' in self.raw_inp:
+        if sys.platform.startswith('win32') and '\\' in str(self.raw_inp):
             self.inf(2, "The input appears to be a windows path. It should be" \
                      "given in posix style to minimize the error risk.", m_sort='note')
             self.raw_inp = self.raw_inp.as_posix()
@@ -169,7 +170,8 @@ class RkPathWork(RkCommon):
         is a file or directory and takes the according actions.
         """
         self.check_inpath()
-        self.transf_winpt()
+        # TODO: Looks like win check isnt needed because pathlib takes care of it
+        # self.transf_winpt()
         self.raw_inp = self.raw_inp.resolve(strict=True)
 
         try:
@@ -593,6 +595,7 @@ def main(cfg):
     if not sys.version_info[:2] >= (3, 6):
         raise Exception(f"Must be executed in Python 3.6 or later.\n"
                         "You are running {}".format(sys.version))
+    init(autoreset=True)
     rkm = RkMain(cfg.inpath, outdir=cfg.outdir, verbose=cfg.verbose, task=cfg.task)
     rkm.rk_control()
 
