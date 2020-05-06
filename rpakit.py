@@ -25,7 +25,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.33.1-alpha'
+__version__ = '0.34.0-alpha'
 
 
 class RkCommon:
@@ -586,9 +586,16 @@ def parse_args():
     return args
 
 
+def main(cfg):
+    """This checks if the required Python version runs, instantiates the class,
+    delivers the parameters to its init and executes the program from CLI.
+    """
+    if not sys.version_info[:2] >= (3, 6):
+        raise Exception(f"Must be executed in Python 3.6 or later.\n"
+                        "You are running {}".format(sys.version))
+    rkm = RkMain(cfg.inpath, outdir=cfg.outdir, verbose=cfg.verbose, task=cfg.task)
+    rkm.rk_control()
+
+
 if __name__ == '__main__':
-    assert sys.version_info >= (3, 6), \
-        f"Must be executed in Python 3.6 or later. You are running {sys.version}"
-    CFG = parse_args()
-    RKM = RkMain(CFG.inpath, outdir=CFG.outdir, verbose=CFG.verbose, task=CFG.task)
-    RKM.rk_control()
+    main(parse_args())
