@@ -26,7 +26,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.35.1-alpha'
+__version__ = '0.35.2-alpha'
 
 
 class RkCommon:
@@ -513,6 +513,7 @@ class RkMain(RkPathWork, RkDepotWork):
 
             if self.task in ['exp', 'sim']:
                 self.unpack_depot()
+                self.cleanup()
             elif self.task == 'lst':
                 self.list_depot_content()
             elif self.task == 'tst':
@@ -522,8 +523,6 @@ class RkMain(RkPathWork, RkDepotWork):
             self.inf(1, f"{self.telltale(RkCommon.count['dep_done'], RkCommon.count['dep_found'], self.depot)}")
             self.clear_rk_vars()
 
-        if self.task in ['exp', 'sim']:
-            self.cleanup()
         self.done_msg()
 
 
