@@ -22,16 +22,16 @@ import textwrap
 
 
 __title__ = 'RPA Kit'
-__license__ = 'Apache-2.0'
+__license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.33.0-alpha'
+__version__ = '0.33.1-alpha'
 
 
 class RkCommon:
     """
-    "Rpa Kit Common" is the base class which provides some shared methods and
-    variables for the child classes.
+    "Rpa Kit Common" provides some shared methods and variables for the other
+    classes.
     """
     name = "RpaKit"
     verbosity = 1
@@ -137,8 +137,7 @@ class RkPathWork(RkCommon):
     @staticmethod
     def valid_archives(entry):
         """Checks path objects for identity by extension. RPA have no real magic num."""
-        return bool(entry.is_file() and entry.suffix
-                    in ['.rpa', '.rpi', '.rpc'])
+        return bool(entry.is_file() and entry.suffix in ['.rpa', '.rpi', '.rpc'])
 
     def add_depot(self, depot):
         """Adds by extension as RPA identified files to the depot list."""
@@ -534,14 +533,16 @@ def parse_args():
         if not args.task:
             aps.print_help()
             raise argparse.ArgumentError(args.task, f"\nNo task requested; " \
-                                         "either -e, -l or -t is required.")
+                                         "either -e, -l, -t or -s is required.")
 
     desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
     rpakit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
     rpakit.py -t /home/{USERNAME}/otherdir/file.rpa
     rpakit.py -e c:/Users/{USERNAME}/my_folder/A123.rpa"""
     epi = "Standard output dir is set to ´{Target}/rpakit_out/´. Change with option -o."
-    aps = argparse.ArgumentParser(description=desc, epilog=epi, formatter_class=argparse.RawTextHelpFormatter)
+    aps = argparse.ArgumentParser(description=desc,
+                                  epilog=epi,
+                                  formatter_class=argparse.RawTextHelpFormatter)
     aps.add_argument('inpath',
                      metavar='Target',
                      action='store',
