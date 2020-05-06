@@ -1,4 +1,4 @@
-[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.33.0_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
+[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.35.2_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
 <!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))  -->
 
 # RPA Kit
@@ -10,11 +10,11 @@ Its also possible to read-only listing of the content or testing if the given ar
 format type supported is.
 
 ## Usage
-### Command line argument overview
+### Command line parameter overview
 ```
 rpakit [-e|-l|-t] [-o OUTPUT] [--verbose] [-version] [-h, --help] Target
 
-positional arguments:
+positional parameters:
   Target                Directory path to search OR path of a RPA file to work on.
 
 tasks:
@@ -23,7 +23,7 @@ tasks:
   -t, --test            Tests if archive(s) are a known format.
   -s, --simulate        Simulates the expand process.
 
-optional arguments:
+optional parameters:
   -o, --outdir OUTPUT   Extracts to the given path instead of standard.
   --verbose             Amount of info output. 0:none, 2:much, default:1
 
@@ -38,7 +38,7 @@ Will extract every file from archive into the default output directory, making
 subdirectories when necessary.
 
 `rpa_kit.py -e -o unpacked /home/{USERNAME}/somedir/search_here`
-Searches for RenPy archives in this directory and uncompresses them in the subdir
+Searches RenPy archives in this directory and uncompresses them in the subdir
 'unpacked'.
 
 `rpa_kit.py -t c:/Users/{username}/my_folder/A123.rpa`
