@@ -26,7 +26,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.35.0-alpha'
+__version__ = '0.35.1-alpha'
 
 
 class RkCommon:
@@ -40,7 +40,6 @@ class RkCommon:
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
     rk_tmp_dir = None
     out_pt = None
-
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.name!r})"
@@ -118,9 +117,9 @@ class RkPathWork(RkCommon):
 
     def make_output(self):
         """Constructs outdir and outpath."""
-        self.out_pt = self._inp_pt /  self.outdir
+        self.out_pt = self._inp_pt / self.outdir
         if self.out_pt.exists():
-            self.inf(0, f"The output directory >{self.out_pt}< exists already." \
+            self.inf(0, f"The output directory >{self.out_pt}< exists already."
                      "Rename or remove it.", m_sort='warn')
             raise FileExistsError
         self.make_dirstruct(self.out_pt)
@@ -155,14 +154,14 @@ class RkPathWork(RkCommon):
     def transf_winpt(self):
         """Check if sys is WinOS and if inp is a win-path. Returns as posix."""
         if sys.platform.startswith('win32') and '\\' in str(self.raw_inp):
-            self.inf(2, "The input appears to be a windows path. It should be" \
+            self.inf(2, "The input appears to be a windows path. It should be"
                      "given in posix style to minimize the error risk.", m_sort='note')
             self.raw_inp = self.raw_inp.as_posix()
 
     def check_inpath(self):
         """Helper to check if given path exist."""
         if not self.raw_inp.exists() or self.raw_inp.is_symlink():
-            raise FileNotFoundError(f"Could the given path object ({self.raw_inp})" \
+            raise FileNotFoundError(f"Could the given path object ({self.raw_inp})"
                                     "not find! Check the given input.")
 
     def pathworker(self):
@@ -303,10 +302,10 @@ class RkDepotWork(RkCommon):
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
             raise f"{err}: Problem with the format data encountered. Perhaps " \
-                    "the RPA is malformed."
+                "the RPA is malformed."
         except TypeError as err:
             raise f"{err}: Somehow the wrong data types had a meeting in here. " \
-                    "They did'n like each other."
+                "They did'n like each other."
         return offset, key
 
     def collect_register(self):
@@ -343,7 +342,7 @@ class RkDepotWork(RkCommon):
             try:
                 magic = self._header[:1].decode()
             except UnicodeError:
-                self.inf(0, "UnicodeError: Header unreadable. Tested file is " \
+                self.inf(0, "UnicodeError: Header unreadable. Tested file is "
                          "perhaps no RPA or very weird.", m_sort='warn')
                 magic = ''
         return magic
@@ -369,7 +368,7 @@ class RkDepotWork(RkCommon):
                 raise NotImplementedError
 
         except (ValueError, NotImplementedError):
-            self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported " \
+            self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported "
                      "variation."
                      f"\nFound archive header: >{self._header}<", m_sort='warn')
             self.dep_initstate = False
@@ -409,7 +408,7 @@ class RkDepotWork(RkCommon):
                 raise f"{err}: Unknown error while trying to extract a file."
 
         if any(self.out_pt.iterdir()):
-            self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: " \
+            self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: "
                      f"{self.strify(self.depot)}")
         else:
             self.inf(2, "No files from archive unpacked.")
@@ -419,12 +418,12 @@ class RkDepotWork(RkCommon):
         self.inf(2, "Listing archive files:")
         for (_fn, _fidx) in sorted(self._reg.items()):
             print(f"Filename: {_fn}  Index data: {_fidx}")
-        self.inf(1, f"Archive {self.strify(self.depot.name)} holds " \
+        self.inf(1, f"Archive {self.strify(self.depot.name)} holds "
                  f"{len(self._reg.keys())} files.")
 
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
-        self.inf(0, f"For archive >{self.depot.name}< the identified version " \
+        self.inf(0, f"For archive >{self.depot.name}< the identified version "
                  f"variant is: \x1b[44m{self._version['desc']!r}\x1b[0m")
 
     def init_depot(self):
@@ -471,14 +470,14 @@ class RkMain(RkPathWork, RkDepotWork):
         if self.task in ['exp', 'sim']:
             if RkCommon.count['dep_done'] > 0:
                 if self.task == 'exp':
-                    self.inf(0, f" Done. We unpacked {RkCommon.count['dep_done']} " \
+                    self.inf(0, f" Done. We unpacked {RkCommon.count['dep_done']} "
                              "archive(s).")
                 else:
-                    self.inf(0, f"We successful simulated the unpacking of" \
+                    self.inf(0, f"We successful simulated the unpacking of"
                              f" {RkCommon.count['dep_done']} archive(s).")
             else:
                 self.inf(0, f"Oops! No archives where processed...")
-        elif self.task  in ['lst', 'tst']:
+        elif self.task in ['lst', 'tst']:
             self.inf(0, f"Completed!")
 
     def begin_msg(self):
@@ -486,7 +485,7 @@ class RkMain(RkPathWork, RkDepotWork):
         if self.raw_inp.is_file():
             self.inf(2, f"Input is a file. Processing {self.raw_inp}.")
         elif self.raw_inp.is_dir():
-            self.inf(2, f"Input is a directory. Searching for RPA in {self.raw_inp} " \
+            self.inf(2, f"Input is a directory. Searching for RPA in {self.raw_inp} "
                      "and below.")
 
     def rk_control(self):
@@ -497,9 +496,9 @@ class RkMain(RkPathWork, RkDepotWork):
             self.pathworker()
         except OSError as err:
             raise Exception(
-                f"{err}: Error while testing and prepairing input path " \
+                f"{err}: Error while testing and prepairing input path "
                 f">{self.raw_inp}< for the main job.")
-        self.inf(1, f"{RkCommon.name} found {RkCommon.count['dep_found']} " \
+        self.inf(1, f"{RkCommon.name} found {RkCommon.count['dep_found']} "
                  "potential archives.")
 
         while self.dep_lst:
@@ -507,7 +506,7 @@ class RkMain(RkPathWork, RkDepotWork):
             try:
                 self.init_depot()
             except OSError as err:
-                raise Exception(f"{err}: Error while opening archive file " \
+                raise Exception(f"{err}: Error while opening archive file "
                                 f">{self.depot}< for initialization.")
             if self.dep_initstate is False:
                 continue
@@ -534,7 +533,7 @@ def parse_args():
         """Helper function to determine if a task is choosen."""
         if not args.task:
             aps.print_help()
-            raise argparse.ArgumentError(args.task, f"\nNo task requested; " \
+            raise argparse.ArgumentError(args.task, f"\nNo task requested; "
                                          "either -e, -l, -t or -s is required.")
 
     desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
