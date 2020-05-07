@@ -1,6 +1,8 @@
 [![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.36.2_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
-<!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))  -->
+<!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))
 
+Github automatic version linking from shield.io is with release/tag possible
+-->
 # RPA Kit
 RPA Kit is a small application for decompressing RenPy archives.
 
@@ -153,7 +155,7 @@ unindented usage of this software is highly discouraged and has here no support.
 
 ### Credits
 
-This software was developed with some orientation on [RenPy's](github.com/renpy/renpy) and [rpatool's](github.com/shizmob/rpatool) code for
+This software was developed with some orientation on [RenPy's](https://github.com/renpy/renpy) and [rpatool's](https://github.com/shizmob/rpatool) code for
 the work with RPA files.
 Credits for the development of the RenPy archive format belong to the contributors of
 the RenPy project.
