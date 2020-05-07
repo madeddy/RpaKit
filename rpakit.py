@@ -7,7 +7,7 @@ writing or testing & identifying the archiv or simulating the expand process is
 also possible.
 """
 
-# pylint:disable=c0301, c0116, w0511, w0612, r0902, r0903
+# TODO: shutil is a nightmare; perhaps write own move functionality
 # TODO: Add functionality to force rpa format version from user input
 
 import os
@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.36.1-alpha'
+__version__ = '0.36.2-alpha'
 
 
 class RkCommon:
@@ -103,6 +103,7 @@ class RkPathWork(RkCommon):
 
     def cleanup(self):
         """Removes temporary content and in simulate mode also the outdir."""
+
         if self.task == 'exp':
             # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
             # fixed in py 3.9; if its standard we use pathlikes as source
@@ -110,7 +111,7 @@ class RkPathWork(RkCommon):
             # for entry in self.rk_tmp_dir.iterdir():
             #     shutil.move(self.strify(entry), self.out_pt)
             shutil.move(self.strify(self.out_pt), self._inp_pt)
-            # shutil.copytree(self.rk_tmp_dir, self.out_pt, dirs_exist_ok=True)
+
         # TODO: write code to check output
         else:
             self.out_pt.rmdir()
@@ -189,7 +190,7 @@ class RkPathWork(RkCommon):
                 self._inp_pt = self.raw_inp.parent
             else:
                 raise FileNotFoundError("File not found!")
-        except Exception as err:  # pylint:disable=w0703
+        except Exception as err:
             print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
         self.ident_paired_depot()
 
