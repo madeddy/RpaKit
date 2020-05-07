@@ -19,14 +19,16 @@ import shutil
 import pickle
 import zlib
 import textwrap
-from colorama import init
+if sys.platform.startswith('win32'):
+    from colorama import init
+    init(autoreset=True)
 
 
 __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.35.2-alpha'
+__version__ = '0.35.3-alpha'
 
 
 class RkCommon:
@@ -370,7 +372,7 @@ class RkDepotWork(RkCommon):
         except (ValueError, NotImplementedError):
             self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported "
                      "variation."
-                     f"\nFound archive header: >{self._header}<", m_sort='warn')
+                     f"\nFound archive header: > {self._header}", m_sort='warn')
             self.dep_initstate = False
         except LookupError:
             raise "There was some problem with the key of the archive..."
@@ -423,7 +425,7 @@ class RkDepotWork(RkCommon):
 
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
-        self.inf(0, f"For archive >{self.depot.name}< the identified version "
+        self.inf(0, f"For archive > {self.depot.name} the identified version "
                  f"variant is: \x1b[44m{self._version['desc']!r}\x1b[0m")
 
     def init_depot(self):
@@ -593,7 +595,6 @@ def main(cfg):
     if not sys.version_info[:2] >= (3, 6):
         raise Exception(f"Must be executed in Python 3.6 or later.\n"
                         "You are running {}".format(sys.version))
-    init(autoreset=True)
     rkm = RkMain(cfg.inpath, outdir=cfg.outdir, verbose=cfg.verbose, task=cfg.task)
     rkm.rk_control()
 
