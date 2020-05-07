@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.36.0-alpha'
+__version__ = '0.36.1-alpha'
 
 
 class RkCommon:
@@ -106,8 +106,11 @@ class RkPathWork(RkCommon):
         if self.task == 'exp':
             # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
             # fixed in py 3.9; if its standard we use pathlikes as source
-            for entry in self.rk_tmp_dir.iterdir():
-                shutil.move(self.strify(entry), self.out_pt)
+            # FIXME: move does error if src exists in dst
+            # for entry in self.rk_tmp_dir.iterdir():
+            #     shutil.move(self.strify(entry), self.out_pt)
+            shutil.move(self.strify(self.out_pt), self._inp_pt)
+            # shutil.copytree(self.rk_tmp_dir, self.out_pt, dirs_exist_ok=True)
         # TODO: write code to check output
         else:
             self.out_pt.rmdir()
@@ -119,9 +122,11 @@ class RkPathWork(RkCommon):
 
     def make_output(self):
         """Constructs outdir and outpath."""
-        self.out_pt = self._inp_pt / self.outdir
-        if self.out_pt.exists():
-            self.inf(0, f"The output directory >{self.out_pt}< exists already."
+        # self.out_pt = self._inp_pt / self.outdir
+        # if self.out_pt.exists():
+        self.out_pt = self.rk_tmp_dir / self.outdir
+        if self._inp_pt.joinpath(self.outdir).exists():
+            self.inf(0, f"The output directory > {self.out_pt} exists already. "
                      "Rename or remove it.", m_sort='warn')
             raise FileExistsError
         self.make_dirstruct(self.out_pt)
@@ -387,10 +392,12 @@ class RkDepotWork(RkCommon):
 
     def check_out_pt(self, f_pt):
         """Checks output path and if needet renames file."""
-        tmp_pt = self.rk_tmp_dir / f_pt
+        # tmp_pt = self.rk_tmp_dir / f_pt
+        tmp_pt = self.out_pt / f_pt
         if tmp_pt.is_dir() or f_pt == "":
             rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
-            tmp_pt = self.rk_tmp_dir / rand_fn
+            # tmp_pt = self.rk_tmp_dir / rand_fn
+            tmp_pt = self.out_pt / rand_fn
             self.inf(2, f"Possible invalid archive! A filename was replaced with the new name '{rand_fn}'.")
         return tmp_pt
 
