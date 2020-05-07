@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.35.3-alpha'
+__version__ = '0.36.0-alpha'
 
 
 class RkCommon:
@@ -104,7 +104,7 @@ class RkPathWork(RkCommon):
     def cleanup(self):
         """Removes temporary content and in simulate mode also the outdir."""
         if self.task == 'exp':
-            # NOTE FIXME: Converting 'src' to str to avoid bugs.python.org/issue32689
+            # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
             # fixed in py 3.9; if its standard we use pathlikes as source
             for entry in self.rk_tmp_dir.iterdir():
                 shutil.move(self.strify(entry), self.out_pt)
@@ -515,7 +515,6 @@ class RkMain(RkPathWork, RkDepotWork):
 
             if self.task in ['exp', 'sim']:
                 self.unpack_depot()
-                self.cleanup()
             elif self.task == 'lst':
                 self.list_depot_content()
             elif self.task == 'tst':
@@ -525,6 +524,8 @@ class RkMain(RkPathWork, RkDepotWork):
             self.inf(1, f"{self.telltale(RkCommon.count['dep_done'], RkCommon.count['dep_found'], self.depot)}")
             self.clear_rk_vars()
 
+        if self.task in ['exp', 'sim']:
+            self.cleanup()
         self.done_msg()
 
 
