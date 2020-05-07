@@ -1,4 +1,4 @@
-[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.35.2_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
+[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.36.2_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
 <!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))  -->
 
 # RPA Kit
@@ -51,9 +51,76 @@ console. The verboseness was also set to highest level (tell everything).
 
 ### API
 
-  TBD
+>The API is possible not final!
 
-(The API is very possible not final, so any description here would be a waste of time.)
+To provide the functionality of _**Rpa Kit**_ in other projects, the programs classes
+can very easily included. Besides the code just for CLI use, the core functionality is 
+organized in four classes in diamond inheritance.
+Overview of this classes:
+
+```python
+class RkMain(RkPathWork, RkDepotWork):
+    """Main class to process args and executing the related methods."""
+
+    def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
+```
+
+* `inpath`: _**str or pathlike, required**_
+    The archive file-path to open or a directory path with archives.
+    Absolute paths preferred.
+
+* `outdir`: _**str or pathlike, optional**_
+    Sets the name of the output directory. If _None_ the standard is used.
+
+* `verbose`: _**int, optional**_
+    Print info about what we are doing. Values: 0-2; Defaults to 1
+
+* `**kwargs`
+  - `task`: _**str, required**_
+    Sets the wanted task. Possible arguments are _exp_ (expand),
+    _lst_ (listing), _tst_(testing), _sim_(simulate)
+
+
+```python
+class RkDepotWork(RkCommon):
+    """
+    This class is the apps core for analyzing, testing and unpacking/decoding RPA
+    files. All needet inputs (depot, output path) are internaly providet.
+    """
+```
+This class holds also two important dicts with the informations about
+the RPA formats. Here can be easily additional formats configured.
+<!-- `_rpaformats = {"header":{'rpaid': ''
+                          'desc': ''
+                          'alias': ''}}`
+
+`_rpaspecs = {{}}` -->
+
+```python
+class RkPathwork(RkCommon):
+    """
+    Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path)
+    are internaly providet. If input is a dir it searches there for archives,
+    checks and filters them and puts them in a list.
+    A archiv as input skips the search part.
+    """
+```
+If a advanced enough user does the path preparations in some other way/place and
+provides the archives itself to the other classes this one could even be spared.
+
+```python
+class RkCommon:
+    """
+    "Rpa Kit Common" provides some shared methods and variables for the other
+    classes.
+    """
+```
+
+
+<!-- ```python
+rkm = RKmain(inpath, outdir=None, verbose=None, **kwargs)
+rkm.rk_control()
+``` -->
 
 ### Motivation - _Why another RPA unpacker?_
 This began in 2017 with a few lines of code and as another learning experience in Python

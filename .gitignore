@@ -41,3 +41,6 @@ venv/
 
 # git
 _config.yml
+
+# user
+contributing.md
