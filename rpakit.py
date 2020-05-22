@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.40.0-alpha'
+__version__ = '0.40.1-alpha'
 
 
 class RpaKitError(Exception):
@@ -302,16 +302,16 @@ class RkDepotWork(RkCommon):
         if self.depot.suffix == '.rpi':
             self.depot = self.depot.with_suffix('.rpa')
 
-        with self.depot.open('rb') as ofi:
+        with self.depot.open('rb') as opfl:
             if len(self._reg[file_pt]) == 1:
                 ofs, leg, pre = pos_stats[0]
-                ofi.seek(ofs)
-                tmp_file = pre + ofi.read(leg - len(pre))
+                opfl.seek(ofs)
+                tmp_file = pre + opfl.read(leg - len(pre))
             else:
                 part = []
                 for ofs, leg, pre in pos_stats:
-                    ofi.seek(ofs)
-                    part.append(ofi.read(leg))
+                    opfl.seek(ofs)
+                    part.append(opfl.read(leg))
                     tmp_file = pre.join(part)
 
         return tmp_file
@@ -352,9 +352,9 @@ class RkDepotWork(RkCommon):
     def collect_register(self):
         """Gets the depot's register through unzip and unpickle."""
         offset, key = self.get_cipher()
-        with self.depot.open('rb') as ofi:
-            ofi.seek(offset)
-            self._reg = pickle.loads(zlib.decompress(ofi.read()), encoding='bytes')
+        with self.depot.open('rb') as opfl:
+            opfl.seek(offset)
+            self._reg = pickle.loads(zlib.decompress(opfl.read()), encoding='bytes')
 
         self.unify_reg()
         if key is not None:
@@ -426,9 +426,9 @@ class RkDepotWork(RkCommon):
 
     def get_header(self):
         """Opens file and reads header line in."""
-        with self.depot.open('rb') as ofi:
-            ofi.seek(0)
-            self._header = ofi.readline()
+        with self.depot.open('rb') as opfl:
+            opfl.seek(0)
+            self._header = opfl.readline()
 
     def check_out_pt(self, f_pt):
         """Checks output path and if needet renames file."""
@@ -451,8 +451,8 @@ class RkDepotWork(RkCommon):
                 tmp_file_data = self.extract_data(file_pt, pos_stats)
                 self.inf(2, f"{self.telltale(file_num, RkCommon.count['fle_total'], file_pt)}")
 
-                with tmp_path.open('wb') as ofi:
-                    ofi.write(tmp_file_data)
+                with tmp_path.open('wb') as opfl:
+                    opfl.write(tmp_file_data)
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
