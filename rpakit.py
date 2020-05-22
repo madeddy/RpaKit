@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.37.0-alpha'
+__version__ = '0.37.1-alpha'
 
 
 class RkCommon:
@@ -62,11 +62,11 @@ class RkCommon:
         if cls.verbosity >= inf_level:  # TODO: use self.tty ?
             ind1 = f"{cls.name}:\x1b[32m >> \x1b[0m"
             ind2 = " " * 12
-            if m_sort == 'note':
-                ind1 = f"{cls.name}:\x1b[93m NOTE \x1b[0m> "
+            if m_sort == 'warn':
+                ind1 = f"{cls.name}:\x1b[93m Warning \x1b[0m> "
                 ind2 = " " * 16
-            elif m_sort == 'warn':
-                ind1 = f"{cls.name}:\x1b[31m WARNING \x1b[0m> "
+            elif m_sort == 'cau':
+                ind1 = f"{cls.name}:\x1b[31m CAUTION \x1b[0m> "
                 ind2 = " " * 20
             elif m_sort == 'raw':
                 print(ind1, msg)
@@ -129,12 +129,12 @@ class RkPathWork(RkCommon):
 
     def make_output(self):
         """Constructs outdir and outpath."""
-            self.inf(0, f"The output directory > {self.out_pt} exists already. "
-                     "Rename or remove it.", m_sort='warn')
         self.out_pt = self._inp_pt / self.outdir
         if self.out_pt.exists() and not self.void_dir(self.out_pt):
             # self.out_pt = self.rk_tmp_dir / self.outdir
             # if self._inp_pt.joinpath(self.outdir).exists():
+            self.inf(0, f"The output directory > {self.out_pt} exists already "
+                     "and is'nt empty. Rename or remove it.", m_sort='cau')
             self.cleanup()
         self.make_dirstruct(self.out_pt)
 
@@ -347,9 +347,9 @@ class RkDepotWork(RkCommon):
             try:
                 magic = self._header[:1].decode()
             except UnicodeError:
-                self.inf(0, "UnicodeError: Header unreadable. Tested file is "
-                         "perhaps no RPA or very weird.", m_sort='warn')
                 magic = ''
+                self.inf(1, "UnicodeDecodeError: Found possibly old RPA-1 format.",
+                         m_sort='warn')
         return magic
 
     def guess_version(self):
@@ -370,15 +370,15 @@ class RkDepotWork(RkCommon):
             elif not self._version:
                 raise ValueError
             elif 'zix12a' in self._version.values() or 'zix12b' in self._version.values():
-                raise NotImplementedError
+                raise NotImplementedError(
+                    self.inf(0, f"{self.depot!r} is a unsupported format.\nFound "
+                             f"archive header: > {self._header}", m_sort='cau'))
 
         except (ValueError, NotImplementedError):
-            self.inf(0, f"{self.depot!r} is not a Ren\'Py archive or a unsupported "
-                     "variation."
-                     f"\nFound archive header: > {self._header}", m_sort='warn')
             self.dep_initstate = False
-        except LookupError:
-            raise "There was some problem with the key of the archive..."
+        except LookupError as err:
+            raise self.inf(0, f"{err} A unknown problem with the archives format "
+                           "ID occured. Unable to continue.", m_sort='cau')
         else:
             self.dep_initstate = True
 
@@ -444,7 +444,7 @@ class RkDepotWork(RkCommon):
             self.inf(2, "Official RPA found.")
 
         if self.dep_initstate is False:
-            self.inf(0, f"Skipping bogus archive: {self.strify(self.depot)}", m_sort='note')
+            self.inf(0, f"Skipping bogus archive: {self.depot!s}", m_sort='warn')
         elif self.dep_initstate is True:
             self.get_version_specs()
             self.collect_register()
