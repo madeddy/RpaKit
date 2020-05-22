@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.37.1-alpha'
+__version__ = '0.38.0-alpha'
 
 
 class RkCommon:
@@ -47,14 +47,9 @@ class RkCommon:
         return f"{self.__class__.__name__}({self.name!r})"
 
     @classmethod
-    def utfify(cls, data):
-        if isinstance(data, str):
-            return data
-        return data.decode("utf-8")
-
-    @classmethod
-    def strify(cls, data):
-        return str(data)
+    def telltale(cls, fraction, total, obj):
+        """Returns a percentage-meter like output for use in tty."""
+        return f"[\x1b[44m{fraction / float(total):05.1%}\x1b[0m] {obj!s:>4}"
 
     @classmethod
     def inf(cls, inf_level, msg, m_sort=None):
@@ -73,6 +68,9 @@ class RkCommon:
                 return
             print(textwrap.fill(msg, width=90, initial_indent=ind1, subsequent_indent=ind2))
 
+    @classmethod
+    def strpth(cls, data):
+        return data if isinstance(data, str) else data.decode()
 
     @classmethod
     def void_dir(cls, dst):
@@ -86,17 +84,13 @@ class RkCommon:
             cls.inf(2, f"Creating directory structure for: {dst}")
             dst.mkdir(parents=True, exist_ok=True)
 
-    @classmethod
-    def telltale(cls, fraction, total, obj):
-        """Returns a percentage-meter like output for use in tty."""
-        return f"[\x1b[44m{fraction / float(total):05.1%}\x1b[0m] {cls.strify(obj):>4}"
-
 
 class RkPathWork(RkCommon):
     """
     Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path)
-    are internaly providet. If input is a dir it searches there for archives,
-    checks and filters them and puts them in a list.
+    are internaly providet.
+    If input is a dir it searches there for archives, checks and filters them and
+    stores them in a list.
     A archiv as input skips the search part.
     """
 
@@ -414,18 +408,18 @@ class RkDepotWork(RkCommon):
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
-            self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: "
-                     f"{self.strify(self.depot)}")
-        else:
         if self.void_dir(self.out_pt):
             self.inf(2, "No files from archive unpacked.")
+        else:
+            self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: "
+                     f"{self.depot!s}")
 
     def list_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
         self.inf(2, "Listing archive files:")
         for (_fn, _fidx) in sorted(self._reg.items()):
             print(f"Filename: {_fn}  Index data: {_fidx}")
-        self.inf(1, f"Archive {self.strify(self.depot.name)} holds "
+        self.inf(1, f"Archive {self.depot.name!s} holds "
                  f"{len(self._reg.keys())} files.")
 
     def test_depot(self):
@@ -448,7 +442,7 @@ class RkDepotWork(RkCommon):
         elif self.dep_initstate is True:
             self.get_version_specs()
             self.collect_register()
-            self._reg = {self.utfify(_pt): _d for _pt, _d in self._reg.items()}
+            self._reg = {self.strpth(_pt): _d for _pt, _d in self._reg.items()}
             RkCommon.count['fle_total'] = len(self._reg)
 
 
