@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.39.0-alpha'
+__version__ = '0.40.0-alpha'
 
 
 class RpaKitError(Exception):
@@ -175,8 +175,8 @@ class RkPathWork(RkCommon):
 
     def ident_paired_depot(self):
         """Identifys rpa1 type paired archives and removes one from the list."""
-        lst_copy = self.dep_lst
-        for entry in list(lst_copy):
+        lst_copy = self.dep_lst[:]
+        for entry in lst_copy:
             if entry.suffix == '.rpi':
                 twin = str(entry.with_suffix('.rpa'))
                 if twin in self.dep_lst:
@@ -373,19 +373,22 @@ class RkDepotWork(RkCommon):
             raise f"Error while aquiring version specifications for {self.depot}."
 
     def get_header_start(self):
-        """Reads the header start in and decodes to string."""
+        """
+        Reads the file header in and trys to produce a decoded string with which we
+        are able to match against the available format ID's.
+        Catching the error as first indictor for RPA 1 is actually the easiest way
+        because RPA 2/3 and the known custom formats passed this so far.
+        """
         try:
-            magic = self._header[:12].decode()
+            magic = self._header.decode()
         except UnicodeDecodeError:
-            self.inf(1, "UnicodeDecodeError: Found possible old RPA-1 format.", m_sort='note')
-            # FIXME: Ugly code; needs improvement
-            # rpa1 type and weirdo files must be twice catched
-            try:
+            # Lets try this: rpa2/3 and custom headers are at 34/36 lenght
+            if len(self._header) not in (34, 36) and self._header.startswith(b"x"):
                 magic = self._header[:1].decode()
-            except UnicodeError:
-                magic = ''
                 self.inf(1, "UnicodeDecodeError: Found possibly old RPA-1 format.",
                          m_sort='warn')
+            else:
+                magic = str()
         return magic
 
     def guess_version(self):
@@ -461,9 +464,12 @@ class RkDepotWork(RkCommon):
 
     def list_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
+        # outp_dst = sys.stdout if "bla" else fl
         self.inf(2, "Listing archive files:")
-        for (_fn, _fidx) in sorted(self._reg.items()):
-            print(f"Filename: {_fn}  Index data: {_fidx}")
+        print(f"Depot {RkCommon.count['dep_done'] + 1}: {self.depot.name}")
+        for num, (fln, flidx) in enumerate(sorted(self._reg.items())):
+            print(f"{' ' * 2}File {num}: {fln}\n{' ' * 4}Index data: {flidx}")
+
         self.inf(1, f"Archive {self.depot.name!s} holds "
                  f"{len(self._reg.keys())} files.")
 
