@@ -28,7 +28,48 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.38.0-alpha'
+__version__ = '0.39.0-alpha'
+
+
+class RpaKitError(Exception):
+    """Base class for exceptions in RpaKit."""
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return repr(f"\x1b[31m{self.msg}\x1b[0m")
+
+
+class AmbiguousHeaderError(RpaKitError):
+    """Exception raised if for a archiv more as one format dedected was.
+
+    Parameter:
+        vers -- version dict in which the error occurred
+        message -- explanation of the error
+    """
+
+    def __init__(self, dep, ver):
+        self.dep = dep
+        self.ver = [v for k, v in ver.items() if 'rpaid' in k]
+        super().__init__(
+            "Detection of the archive format failed because multiple matches where "
+            f"found.\nArchive: {self.dep} with Version > {self.ver}")
+
+
+class NoRpaOrUnknownWarning(RpaKitError):
+    """Warning raised if a archiv format could not identified.
+
+    Parameter:
+        dep -- depot with the problem
+        message -- explanation of the problem
+    """
+
+    def __init__(self, dep, head):
+        self.dep = dep
+        self.head = head
+        super().__init__(
+            "Header not recognizable. Tested archive is not a RPA or a unknown "
+            f"custom type.\nArchive: {self.dep} with header: > {self._header}")
 
 
 class RkCommon:
@@ -39,7 +80,7 @@ class RkCommon:
     name = "RpaKit"
     verbosity = 1
     outdir = 'rpakit_out'
-    count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0}
+    count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0, 'fid_found': 0}
     rk_tmp_dir = None
     out_pt = None
 
@@ -254,6 +295,7 @@ class RkDepotWork(RkCommon):
         self._version.clear()
         self._reg.clear()
         self.dep_initstate = None
+        self.count['fid_found'] = 0
 
     def extract_data(self, file_pt, pos_stats):
         """Extracts the archive data to a temp file."""
@@ -347,14 +389,15 @@ class RkDepotWork(RkCommon):
         return magic
 
     def guess_version(self):
-        """Determines archive version from header/suffix and pairs alias variants
-        with a main format id.
+        """Determines probable archive version from header/suffix and pairs alias
+        variants with a main format ID.
         """
         magic = self.get_header_start()
         try:
             for key, val in self._rpaformats.items():
                 if key in magic:
                     self._version.update(val)
+                    self.count['fid_found'] += 1
 
             # NOTE:If no version is found the dict is empty; searching with a key
             # slice for 'rpaid' excepts a KeyError (better init dict with key?)
@@ -362,13 +405,15 @@ class RkDepotWork(RkCommon):
                 # self._version = {}
                 self._version.clear()
             elif not self._version:
-                raise ValueError
+                raise NoRpaOrUnknownWarning(self.depot, self._header)
+            elif self.count['fid_found'] > 1:
+                raise AmbiguousHeaderError(self._version)
             elif 'zix12a' in self._version.values() or 'zix12b' in self._version.values():
                 raise NotImplementedError(
                     self.inf(0, f"{self.depot!r} is a unsupported format.\nFound "
                              f"archive header: > {self._header}", m_sort='cau'))
 
-        except (ValueError, NotImplementedError):
+        except (NoRpaOrUnknownWarning, NotImplementedError):
             self.dep_initstate = False
         except LookupError as err:
             raise self.inf(0, f"{err} A unknown problem with the archives format "
