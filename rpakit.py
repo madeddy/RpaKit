@@ -7,7 +7,7 @@ writing or testing & identifying the archiv or simulating the expand process is
 also possible.
 """
 
-# TODO: shutil is a nightmare; perhaps write own move functionality
+# TODO: shutil is a nightmare; perhaps code custom move functionality
 # TODO: Add functionality to force rpa format version from user input
 
 import os
@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.36.2-alpha'
+__version__ = '0.37.0-alpha'
 
 
 class RkCommon:
@@ -73,6 +73,12 @@ class RkCommon:
                 return
             print(textwrap.fill(msg, width=90, initial_indent=ind1, subsequent_indent=ind2))
 
+
+    @classmethod
+    def void_dir(cls, dst):
+        """Checks if given directory has content."""
+        return not any(dst.iterdir())
+
     @classmethod
     def make_dirstruct(cls, dst):
         """Constructs any needet output directorys if they not already exist."""
@@ -107,29 +113,29 @@ class RkPathWork(RkCommon):
         if self.task == 'exp':
             # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
             # fixed in py 3.9; if its standard we use pathlikes as source
-            # FIXME: move does error if src exists in dst
-            # for entry in self.rk_tmp_dir.iterdir():
-            #     shutil.move(self.strify(entry), self.out_pt)
-            shutil.move(self.strify(self.out_pt), self._inp_pt)
+            # FIXME: move does error if src exists in dst; how?
+            for entry in self.rk_tmp_dir.iterdir():
+                # src = (entry).relative_to(self.rk_tmp_dir)
+                shutil.move(str(entry), self.out_pt)
 
         # TODO: write code to check output
         else:
             self.out_pt.rmdir()
 
-        if not any(self.rk_tmp_dir.iterdir()):
+        if self.void_dir(self.rk_tmp_dir):
             self.rk_tmp_dir.rmdir()
         else:
             shutil.rmtree(self.rk_tmp_dir)
 
     def make_output(self):
         """Constructs outdir and outpath."""
-        # self.out_pt = self._inp_pt / self.outdir
-        # if self.out_pt.exists():
-        self.out_pt = self.rk_tmp_dir / self.outdir
-        if self._inp_pt.joinpath(self.outdir).exists():
             self.inf(0, f"The output directory > {self.out_pt} exists already. "
                      "Rename or remove it.", m_sort='warn')
-            raise FileExistsError
+        self.out_pt = self._inp_pt / self.outdir
+        if self.out_pt.exists() and not self.void_dir(self.out_pt):
+            # self.out_pt = self.rk_tmp_dir / self.outdir
+            # if self._inp_pt.joinpath(self.outdir).exists():
+            self.cleanup()
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
@@ -159,27 +165,18 @@ class RkPathWork(RkCommon):
             entry_pth = pt(entry.path)
             self.add_depot(entry_pth)
 
-    def transf_winpt(self):
-        """Check if sys is WinOS and if inp is a win-path. Returns as posix."""
-        if sys.platform.startswith('win32') and '\\' in str(self.raw_inp):
-            self.inf(2, "The input appears to be a windows path. It should be"
-                     "given in posix style to minimize the error risk.", m_sort='note')
-            self.raw_inp = self.raw_inp.as_posix()
-
     def check_inpath(self):
         """Helper to check if given path exist."""
         if not self.raw_inp.exists() or self.raw_inp.is_symlink():
             raise FileNotFoundError(f"Could the given path object ({self.raw_inp})"
                                     "not find! Check the given input.")
+        self.raw_inp = self.raw_inp.resolve(strict=True)
 
     def pathworker(self):
         """This prepairs the given path and output dir. It dicovers if the input
         is a file or directory and takes the according actions.
         """
         self.check_inpath()
-        # TODO: Looks like win check isnt needed because pathlib takes care of it
-        # self.transf_winpt()
-        self.raw_inp = self.raw_inp.resolve(strict=True)
 
         try:
             if self.raw_inp.is_dir():
@@ -393,12 +390,12 @@ class RkDepotWork(RkCommon):
 
     def check_out_pt(self, f_pt):
         """Checks output path and if needet renames file."""
-        # tmp_pt = self.rk_tmp_dir / f_pt
-        tmp_pt = self.out_pt / f_pt
+        tmp_pt = self.rk_tmp_dir / f_pt
+        # tmp_pt = self.out_pt / f_pt
         if tmp_pt.is_dir() or f_pt == "":
             rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
-            # tmp_pt = self.rk_tmp_dir / rand_fn
-            tmp_pt = self.out_pt / rand_fn
+            tmp_pt = self.rk_tmp_dir / rand_fn
+            # tmp_pt = self.out_pt / rand_fn
             self.inf(2, f"Possible invalid archive! A filename was replaced with the new name '{rand_fn}'.")
         return tmp_pt
 
@@ -417,10 +414,10 @@ class RkDepotWork(RkCommon):
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
-        if any(self.out_pt.iterdir()):
             self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: "
                      f"{self.strify(self.depot)}")
         else:
+        if self.void_dir(self.out_pt):
             self.inf(2, "No files from archive unpacked.")
 
     def list_depot_content(self):
