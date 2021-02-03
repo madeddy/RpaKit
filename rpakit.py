@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.40.1-alpha'
+__version__ = '0.41.0-alpha'
 
 
 class RpaKitError(Exception):
@@ -37,7 +37,7 @@ class RpaKitError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return repr(f"\x1b[31m{self.msg}\x1b[0m")
+        return f"\x1b[31m{repr(self.msg)}\x1b[0m"
 
 
 class AmbiguousHeaderError(RpaKitError):
@@ -211,9 +211,9 @@ class RkPathWork(RkCommon):
         """This prepairs the given path and output dir. It dicovers if the input
         is a file or directory and takes the according actions.
         """
-        self.check_inpath()
-
         try:
+            self.check_inpath()
+
             if self.raw_inp.is_dir():
                 self._inp_pt = self.raw_inp
                 self.search_rpa()
@@ -222,8 +222,12 @@ class RkPathWork(RkCommon):
                 self._inp_pt = self.raw_inp.parent
             else:
                 raise FileNotFoundError("File not found!")
-        except Exception as err:
-            print(f"{err}: Unexpected error from the given target path. \n{sys.exc_info()}")
+
+        except OSError as err:
+            raise RpaKitError(
+                f"{err}: Error while testing and prepairing input path "
+                f">{self.raw_inp}< for the main job.")
+
         self.ident_paired_depot()
 
         if self.task in ['exp', 'sim']:
@@ -374,7 +378,7 @@ class RkDepotWork(RkCommon):
 
     def get_header_start(self):
         """
-        Reads the file header in and trys to produce a decoded string with which we
+        Reads the file header in and trys to produce a decoded string which we
         are able to match against the available format ID's.
         Catching the error as first indictor for RPA 1 is actually the easiest way
         because RPA 2/3 and the known custom formats passed this so far.
@@ -382,9 +386,12 @@ class RkDepotWork(RkCommon):
         try:
             magic = self._header.decode()
         except UnicodeDecodeError:
-            # Lets try this: rpa2/3 and custom headers are at 34/36 lenght
-            if len(self._header) not in (34, 36) and self._header.startswith(b"x"):
-                magic = self._header[:1].decode()
+            # Lets try this: rpa2/3 and custom headers are at 34/36 length
+            # if len(self._header) not in (34, 36) and self._header.startswith(b"x"):
+            #     magic = self._header[:1].decode()
+            # alternate: Coding should be cp1252 and zlib compression default (\x9c)
+            if len(self._header) not in (34, 36) and self._header.startswith(b"\x78\x9c"):
+                magic = self._header[:2].decode('cp1252')
                 self.inf(1, "UnicodeDecodeError: Found possibly old RPA-1 format.",
                          m_sort='warn')
             else:
@@ -480,21 +487,25 @@ class RkDepotWork(RkCommon):
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
-        self.get_header()
-        self.guess_version()
+        try:
+            self.get_header()
+            self.guess_version()
 
-        if 'alias' in self._version.keys():
-            self.inf(2, "Unofficial RPA found.")
-        else:
-            self.inf(2, "Official RPA found.")
+            if 'alias' in self._version.keys():
+                self.inf(2, "Unofficial RPA found.")
+            else:
+                self.inf(2, "Official RPA found.")
 
-        if self.dep_initstate is False:
-            self.inf(0, f"Skipping bogus archive: {self.depot!s}", m_sort='warn')
-        elif self.dep_initstate is True:
-            self.get_version_specs()
-            self.collect_register()
-            self._reg = {self.strpth(_pt): _d for _pt, _d in self._reg.items()}
-            RkCommon.count['fle_total'] = len(self._reg)
+            if self.dep_initstate is False:
+                self.inf(0, f"Skipping bogus archive: {self.depot!s}", m_sort='warn')
+            elif self.dep_initstate is True:
+                self.get_version_specs()
+                self.collect_register()
+                self._reg = {self.strpth(_pt): _d for _pt, _d in self._reg.items()}
+                RkCommon.count['fle_total'] = len(self._reg)
+        except OSError as err:
+            raise RpaKitError(f"{err}: Error while opening archive file "
+                              f">{self.depot}< for initialization.")
 
 
 class RkMain(RkPathWork, RkDepotWork):
@@ -543,23 +554,14 @@ class RkMain(RkPathWork, RkDepotWork):
     def rk_control(self):
         """Processes input, yields depot's to the functions."""
         self.begin_msg()
-
-        try:
-            self.pathworker()
-        except OSError as err:
-            raise Exception(
-                f"{err}: Error while testing and prepairing input path "
-                f">{self.raw_inp}< for the main job.")
+        self.pathworker()
         self.inf(1, f"{RkCommon.name} found {RkCommon.count['dep_found']} "
                  "potential archives.")
 
         while self.dep_lst:
             self.depot = self.dep_lst.pop()
-            try:
-                self.init_depot()
-            except OSError as err:
-                raise Exception(f"{err}: Error while opening archive file "
-                                f">{self.depot}< for initialization.")
+
+            self.init_depot()
             if self.dep_initstate is False:
                 continue
 
