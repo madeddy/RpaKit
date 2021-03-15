@@ -19,9 +19,13 @@ import shutil
 import pickle
 import zlib
 import textwrap
+tty_colors = True
 if sys.platform.startswith('win32'):
-    from colorama import init
-    init(autoreset=True)
+    try:
+        from colorama import init
+        init(autoreset=True)
+    except ImportError:
+        tty_colors = False
 
 
 __title__ = 'RPA Kit'
