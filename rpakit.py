@@ -41,7 +41,7 @@ class RpaKitError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return f"\x1b[31m{repr(self.msg)}\x1b[0m"
+        return f"{self.red}{repr(self.msg)}{self.std}"
 
 
 class AmbiguousHeaderError(RpaKitError):
@@ -87,6 +87,10 @@ class RkCommon:
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0, 'fid_found': 0}
     rk_tmp_dir = None
     out_pt = None
+    # tty color code shorthands
+    std, ul, red, gre, ora, blu, ylw, bg_blu, bg_red = (
+        '\x1b[0m', '\x1b[03m', '\x1b[31m', '\x1b[32m', '\x1b[33m', '\x1b[34m',
+        '\x1b[93m', '\x1b[44;30m', '\x1b[45;30m' if tty_colors else '')
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.name!r})"
@@ -94,24 +98,26 @@ class RkCommon:
     @classmethod
     def telltale(cls, fraction, total, obj):
         """Returns a percentage-meter like output for use in tty."""
-        return f"[\x1b[44m{fraction / float(total):05.1%}\x1b[0m] {obj!s:>4}"
+        return f"[{cls.bg_blu}{fraction / float(total):05.1%}{cls.std}] {obj!s:>4}"
 
     @classmethod
     def inf(cls, inf_level, msg, m_sort=None):
         """Outputs by the current verboseness level allowed infos."""
         if cls.verbosity >= inf_level:  # TODO: use self.tty ?
-            ind1 = f"{cls.name}:\x1b[32m >> \x1b[0m"
-            ind2 = " " * 12
             if m_sort == 'warn':
-                ind1 = f"{cls.name}:\x1b[93m Warning \x1b[0m> "
+                ind1 = f"{cls.name}:{cls.ylw} WARNING {cls.std}> "
                 ind2 = " " * 16
             elif m_sort == 'cau':
-                ind1 = f"{cls.name}:\x1b[31m CAUTION \x1b[0m> "
+                ind1 = f"{cls.name}:{cls.red} CAUTION {cls.std}> "
                 ind2 = " " * 20
             elif m_sort == 'raw':
                 print(ind1, msg)
                 return
-            print(textwrap.fill(msg, width=90, initial_indent=ind1, subsequent_indent=ind2))
+            else:
+                ind1 = f"{cls.name}:{cls.gre} >> {cls.std}"
+                ind2 = " " * 12
+            print(textwrap.fill(msg, width=90, initial_indent=ind1,
+                  subsequent_indent=ind2))
 
     @classmethod
     def strpth(cls, data):
@@ -491,7 +497,7 @@ class RkDepotWork(RkCommon):
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
         self.inf(0, f"For archive > {self.depot.name} the identified version "
-                 f"variant is: \x1b[44m{self._version['desc']!r}\x1b[0m")
+                 f"variant is: {self.bg_blu}{self._version['desc']!r}{self.std}")
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
