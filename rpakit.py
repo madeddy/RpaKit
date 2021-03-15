@@ -19,6 +19,7 @@ import shutil
 import pickle
 import zlib
 import textwrap
+
 tty_colors = True
 if sys.platform.startswith('win32'):
     try:
@@ -104,6 +105,8 @@ class RkCommon:
     def inf(cls, inf_level, msg, m_sort=None):
         """Outputs by the current verboseness level allowed infos."""
         if cls.verbosity >= inf_level:  # TODO: use self.tty ?
+            ind1 = f"{cls.name}:{cls.gre} >> {cls.std}"
+            ind2 = " " * 12
             if m_sort == 'warn':
                 ind1 = f"{cls.name}:{cls.ylw} WARNING {cls.std}> "
                 ind2 = " " * 16
@@ -113,9 +116,7 @@ class RkCommon:
             elif m_sort == 'raw':
                 print(ind1, msg)
                 return
-            else:
-                ind1 = f"{cls.name}:{cls.gre} >> {cls.std}"
-                ind2 = " " * 12
+
             print(textwrap.fill(msg, width=90, initial_indent=ind1,
                   subsequent_indent=ind2))
 
