@@ -147,7 +147,10 @@ class RkPathWork(RkCommon):
 
         if self.task == 'exp':
             # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
-            # fixed in py 3.9; if its standard we use pathlikes as source
+            # fixed in py 3.9 - move accepts now pathlike
+            # TODO: if its long standard we use pathlikes as source
+            # means users need py3.9+
+
             # FIXME: move does error if src exists in dst; how?
             for entry in self.rk_tmp_dir.iterdir():
                 # src = (entry).relative_to(self.rk_tmp_dir)
@@ -445,7 +448,8 @@ class RkDepotWork(RkCommon):
             rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
             tmp_pt = self.rk_tmp_dir / rand_fn
             # tmp_pt = self.out_pt / rand_fn
-            self.inf(2, f"Possible invalid archive! A filename was replaced with the new name '{rand_fn}'.")
+            self.inf(2, "Possible invalid archive! A filename was replaced with"
+                     f"the new name '{rand_fn}'.")
         return tmp_pt
 
     def unpack_depot(self):
@@ -536,12 +540,12 @@ class RkMain(RkPathWork, RkDepotWork):
                     self.inf(0, f" Done. We unpacked {RkCommon.count['dep_done']} "
                              "archive(s).")
                 else:
-                    self.inf(0, f"We successful simulated the unpacking of"
+                    self.inf(0, "We successful simulated the unpacking of"
                              f" {RkCommon.count['dep_done']} archive(s).")
             else:
-                self.inf(0, f"Oops! No archives where processed...")
+                self.inf(0, "Oops! No archives where processed...")
         elif self.task in ['lst', 'tst']:
-            self.inf(0, f"Completed!")
+            self.inf(0, "Completed!")
 
     def begin_msg(self):
         """Outputs a info  about the start state if verbosity is high."""
@@ -587,7 +591,7 @@ def parse_args():
         """Helper function to determine if a task is choosen."""
         if not args.task:
             aps.print_help()
-            raise argparse.ArgumentError(args.task, f"\nNo task requested; "
+            raise argparse.ArgumentError(args.task, "\nNo task requested; "
                                          "either -e, -l, -t or -s is required.")
 
     desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
@@ -646,7 +650,7 @@ def main(cfg):
     delivers the parameters to its init and executes the program from CLI.
     """
     if not sys.version_info[:2] >= (3, 6):
-        raise Exception(f"Must be executed in Python 3.6 or later.\n"
+        raise Exception("Must be executed in Python 3.6 or later.\n"
                         "You are running {}".format(sys.version))
     rkm = RkMain(cfg.inpath, outdir=cfg.outdir, verbose=cfg.verbose, task=cfg.task)
     rkm.rk_control()
