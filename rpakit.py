@@ -28,7 +28,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.41.0-alpha'
+__version__ = '0.42.0-alpha'
 
 
 class RpaKitError(Exception):
