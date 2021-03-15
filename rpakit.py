@@ -81,7 +81,7 @@ class RkCommon:
     "Rpa Kit Common" provides some shared methods and variables for the other
     classes.
     """
-    name = "RpaKit"
+    name = __title__
     verbosity = 1
     outdir = 'rpakit_out'
     count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0, 'fid_found': 0}
@@ -152,7 +152,7 @@ class RkPathWork(RkCommon):
         self.raw_inp = None
         self.task = None
 
-    def cleanup(self):
+    def _dispose(self):
         """Removes temporary content and in simulate mode also the outdir."""
 
         if self.task == 'exp':
@@ -183,7 +183,7 @@ class RkPathWork(RkCommon):
             # if self._inp_pt.joinpath(self.outdir).exists():
             self.inf(0, f"The output directory > {self.out_pt} exists already "
                      "and is'nt empty. Rename or remove it.", m_sort='cau')
-            self.cleanup()
+            self._dispose()
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
@@ -591,7 +591,7 @@ class RkMain(RkPathWork, RkDepotWork):
             self.clear_rk_vars()
 
         if self.task in ['exp', 'sim']:
-            self.cleanup()
+            self._dispose()
         self.done_msg()
 
 
