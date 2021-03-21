@@ -167,7 +167,9 @@ class RkPathWork(RkCommon):
                 # src = (entry).relative_to(self.rk_tmp_dir)
                 shutil.move(str(entry), self.out_pt)
 
-        # TODO: write code to check output
+            # TODO: write code to check output
+            if self.void_dir(self.out_pt):
+                self.out_pt.rmdir()
         else:
             self.out_pt.rmdir()
 
@@ -479,7 +481,7 @@ class RkDepotWork(RkCommon):
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
-        if self.void_dir(self.out_pt):
+        if self.void_dir(self.rk_tmp_dir):
             self.inf(2, "No files from archive unpacked.")
         else:
             self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: "
@@ -507,12 +509,6 @@ class RkDepotWork(RkCommon):
             self.get_header()
             self.guess_version()
 
-            if 'alias' in self._version.keys():
-                self.inf(2, "Unofficial RPA found."
-                         f"RPA variant name is '{self._version['alias']}'")
-            else:
-                self.inf(2, "Official RPA found.")
-
             if self.dep_initstate is False:
                 self.inf(0, f"Skipping bogus archive: {self.depot!s}", m_sort='warn')
             elif self.dep_initstate is True:
@@ -520,6 +516,13 @@ class RkDepotWork(RkCommon):
                 self.collect_register()
                 self._reg = {self.strpth(_pt): _d for _pt, _d in self._reg.items()}
                 RkCommon.count['fle_total'] = len(self._reg)
+
+            if 'alias' in self._version.keys():
+                self.inf(2, "Unofficial RPA found. "
+                         f"RPA variant name is '{self._version['alias']}'")
+            else:
+                self.inf(2, "Official RPA found.")
+
         except OSError as err:
             raise RpaKitError(f"{err}: Error while opening archive file "
                               f">{self.depot}< for initialization.")
