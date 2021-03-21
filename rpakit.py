@@ -276,6 +276,10 @@ class RkDepotWork(RkCommon):
                                 'desc': 'Legacy type RPA-2.0'},
                    'RPA-3.0 ': {'rpaid': 'rpa3',
                                 'desc': 'Standard type RPA-3.0'},
+                   # Header ID is the same as rpa3 but double keys are not allowed
+                   'RPA-3.0rk': {'rpaid': 'rpa3rk',
+                                 'alias': 'RPA 3 rk',
+                                 'desc': 'Custom type of RPA-3.0 with reversed key'},
                    'RPI-3.0': {'rpaid': 'rpa32',
                                'alias': 'rpi3',
                                'desc': 'Custom type RPI-3.0'},
@@ -288,10 +292,13 @@ class RkDepotWork(RkCommon):
                                'alias': 'rpa4',
                                'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'},
                    'ALT-1.0': {'rpaid': 'alt1',
+                               'alias': 'ALT 1',
                                'desc': 'Custom type ALT-1.0'},
                    'ZiX-12A': {'rpaid': 'zix12a',
+                               'alias': 'ZIX 12a',
                                'desc': 'Custom type ZiX-12A'},
                    'ZiX-12B': {'rpaid': 'zix12b',
+                               'alias': 'ZIX 12b',
                                'desc': 'Custom type ZiX-12B'}}
 
     _rpaspecs = {'rpa1': {'offset': 0,
@@ -299,7 +306,9 @@ class RkDepotWork(RkCommon):
                  'rpa2': {'offset': slice(8, None),
                           'key': None},
                  'rpa3': {'offset': slice(8, 24),
-                          'key': slice(25, 33)},
+                          'key': slice(25, 33),
+                          'key_org': 1111638594,
+                          'key_rv': slice(None, None, -1)},
                  'rpa32': {'offset': slice(8, 24),
                            'key': slice(27, 35)},
                  'alt1': {'offset': slice(17, 33),
@@ -365,8 +374,14 @@ class RkDepotWork(RkCommon):
             slos, slky = self._version['offset'], self._version['key']
             if self._version['rpaid'] != 'rpa1':
                 offset = int(self._header[slos], 16)
-                if self._version['rpaid'] != 'rpa2':
-                    key = int(self._header[slky], 16)
+            if self._version['rpaid'] != 'rpa2':
+                key = int(self._header[slky], 16)
+
+            if self._version['rpaid'] == 'rpa3' and key != self._version['key_org']:
+                slky_b = self._version['key_rv']
+                key = int(self._header[slky][slky_b], 16)
+                self._version.update(self._rpaformats['RPA-3.0rk'])
+
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
             raise f"{err}: Problem with the format data encountered. Perhaps " \
