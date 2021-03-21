@@ -33,7 +33,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.42.0-alpha'
+__version__ = '0.43.0-alpha'
 
 
 class RpaKitError(Exception):
@@ -451,6 +451,7 @@ class RkDepotWork(RkCommon):
             opfl.seek(0)
             self._header = opfl.readline()
 
+    # FIXME Path related - should be in on of the other classes
     def check_out_pt(self, f_pt):
         """Checks output path and if needet renames file."""
         tmp_pt = self.rk_tmp_dir / f_pt
@@ -507,7 +508,8 @@ class RkDepotWork(RkCommon):
             self.guess_version()
 
             if 'alias' in self._version.keys():
-                self.inf(2, "Unofficial RPA found.")
+                self.inf(2, "Unofficial RPA found."
+                         f"RPA variant name is '{self._version['alias']}'")
             else:
                 self.inf(2, "Official RPA found.")
 
@@ -591,6 +593,8 @@ class RkMain(RkPathWork, RkDepotWork):
             self.inf(1, f"{self.telltale(RkCommon.count['dep_done'], RkCommon.count['dep_found'], self.depot)}")
             self.clear_rk_vars()
 
+        # FIXME: Subpar behavior. Call dispose for std task of moving unpacked
+        # content in place. Should be normal func first. e.g.
         if self.task in ['exp', 'sim']:
             self._dispose()
         self.done_msg()
