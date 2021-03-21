@@ -178,6 +178,12 @@ class RkPathWork(RkCommon):
         else:
             shutil.rmtree(self.rk_tmp_dir)
 
+    def _exit(self):
+        self.inf(0, "Exiting RpaKit.")
+        for i in range(3, -1, -1):
+            print(f"{RkCommon.bg_red}{i}%{RkCommon.std}", end='\r')
+        sys.exit(0)
+
     def make_output(self):
         """Constructs outdir and outpath."""
         self.out_pt = self._inp_pt / self.outdir
@@ -187,6 +193,7 @@ class RkPathWork(RkCommon):
             self.inf(0, f"The output directory > {self.out_pt} exists already "
                      "and is'nt empty. Rename or remove it.", m_sort='cau')
             self._dispose()
+            self._exit()
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
