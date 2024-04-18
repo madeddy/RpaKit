@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
 """
 RPAKit is a small app which searches in a given path(if not file) RenPy archives
@@ -19,6 +19,7 @@ import shutil
 import pickle
 import zlib
 import textwrap
+from pathlib import Path
 
 tty_colors = True
 if sys.platform.startswith('win32'):
@@ -33,7 +34,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.43.0-alpha'
+__version__ = '0.44.0-alpha'
 
 
 class RpaKitError(Exception):
@@ -560,14 +561,14 @@ class RkMain(RkPathWork, RkDepotWork):
         {verbose=[0|1|2]} information output level; defaults to 1
     """
 
-    def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
+    def __init__(self, inpath, task, outdir=None, verbose=None):
         if verbose:
             RkCommon.verbosity = verbose
         if outdir:
-            RkCommon.outdir = pt(outdir)
+            RkCommon.outdir = Path(outdir)
         super().__init__()
-        self.raw_inp = pt(inpath)
-        self.task = kwargs.get('task')
+        self.raw_inp = Path(inpath)
+        self.task = task
 
     def done_msg(self):
         """Outputs a info when all is done."""
@@ -693,16 +694,18 @@ def parse_args():
     return args
 
 
-def main(cfg):
-    """This checks if the required Python version runs, instantiates the class,
+def main():
+    """
+    This checks if the minimum required Python version runs, instantiates the class,
     delivers the parameters to its init and executes the program from CLI.
     """
-    if not sys.version_info[:2] >= (3, 6):
-        raise Exception("Must be executed in Python 3.6 or later.\n"
-                        "You are running {}".format(sys.version))
-    rkm = RkMain(cfg.inpath, outdir=cfg.outdir, verbose=cfg.verbose, task=cfg.task)
+    if not sys.version_info[:2] >= (3, 9):
+        raise RuntimeError("Must be executed in Python 3.9 or later.\n"
+                           f"You are running {sys.version}")
+    cfg = parse_args()
+    rkm = RkMain(cfg.inpath, cfg.task, outdir=cfg.outdir, verbose=cfg.verbose)
     rkm.rk_control()
 
 
 if __name__ == '__main__':
-    main(parse_args())
+    main()
