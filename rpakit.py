@@ -149,19 +149,19 @@ class RkPathWork(RkCommon):
     def __init__(self):
         super().__init__()
         self.dep_lst = []
-        self._inp_pt = None
+        self.inp_pt = None
         self.raw_inp = None
         self.task = None
 
-    def _dispose(self):
         """Removes temporary content and in simulate mode also the outdir."""
 
-        if self.task == 'exp':
             # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
             # fixed in py 3.9 - move accepts now pathlike
             # TODO: if its long standard we use pathlikes as source
             # means users need py3.9+
+    def dispose(self):
 
+        if self.task == 'extract':
             # FIXME: move does error if src exists in dst; how?
             for entry in self.rk_tmp_dir.iterdir():
                 # src = (entry).relative_to(self.rk_tmp_dir)
@@ -178,7 +178,7 @@ class RkPathWork(RkCommon):
         else:
             shutil.rmtree(self.rk_tmp_dir)
 
-    def _exit(self):
+    def exit_app(self):
         self.inf(0, "Exiting RpaKit.")
         for i in range(3, -1, -1):
             print(f"{RkCommon.bg_red}{i}%{RkCommon.std}", end='\r')
@@ -186,14 +186,13 @@ class RkPathWork(RkCommon):
 
     def make_output(self):
         """Constructs outdir and outpath."""
-        self.out_pt = self._inp_pt / self.outdir
+
+        self.out_pt = self.inp_pt / self.outdir
         if self.out_pt.exists() and not self.void_dir(self.out_pt):
-            # self.out_pt = self.rk_tmp_dir / self.outdir
-            # if self._inp_pt.joinpath(self.outdir).exists():
-            self.inf(0, f"The output directory > {self.out_pt} exists already "
-                     "and is'nt empty. Rename or remove it.", m_sort='cau')
-            self._dispose()
-            self._exit()
+            self.inf(0, f"The output directory > {self.out_pt} exists already and "
+                     "is not empty. Rename or remove it.", m_sort='cau')
+            self.dispose()
+            self.exit_app()
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
@@ -253,8 +252,8 @@ class RkPathWork(RkCommon):
 
         self.ident_paired_depot()
 
-        if self.task in ['exp', 'sim']:
-            self.rk_tmp_dir = pt(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
+        if self.task in ['extract', 'simulate']:
+            self.rk_tmp_dir = Path(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
             self.make_output()
 
         if RkCommon.count['dep_found'] > 0:
@@ -318,18 +317,18 @@ class RkDepotWork(RkCommon):
     def __init__(self):
         super().__init__()
         self.depot = None
-        self._header = None
-        self._version = {}
-        self._reg = {}
+        self.header = None
+        self.version = {}
+        self.reg = {}
         self.dep_initstate = None
 
     def clear_rk_vars(self):
         """This clears some vars. In rare cases nothing is assigned and old values
         from previous depot run are caried over. Weird files will slip in and error.
         """
-        self._header = None
-        self._version.clear()
-        self._reg.clear()
+        self.header = None
+        self.version.clear()
+        self.reg.clear()
         self.dep_initstate = None
         self.count['fid_found'] = 0
 
@@ -338,25 +337,25 @@ class RkDepotWork(RkCommon):
         if self.depot.suffix == '.rpi':
             self.depot = self.depot.with_suffix('.rpa')
 
-        with self.depot.open('rb') as opfl:
-            if len(self._reg[file_pt]) == 1:
-                ofs, leg, pre = pos_stats[0]
-                opfl.seek(ofs)
-                tmp_file = pre + opfl.read(leg - len(pre))
+        with self.depot.open('rb') as of:
+            if len(self.reg[file_pt]) == 1:
+                offset, leg, prefix = pos_stats[0]
+                of.seek(offset)
+                tmp_file = prefix + of.read(leg - len(prefix))
             else:
                 part = []
-                for ofs, leg, pre in pos_stats:
-                    opfl.seek(ofs)
-                    part.append(opfl.read(leg))
-                    tmp_file = pre.join(part)
+                for offset, leg, prefix in pos_stats:
+                    of.seek(offset)
+                    part.append(of.read(leg))
+                    tmp_file = prefix.join(part)
 
         return tmp_file
 
     def unscrample_reg(self, key):
         """Unscrambles the archive register."""
-        for _kv in self._reg:
-            self._reg[_kv] = [(ofs ^ key, leg ^ key, pre)
-                              for ofs, leg, pre in self._reg[_kv]]
+        for kv in self.reg:
+            self.reg[kv] = [(offset ^ key, leg ^ key, prefix)
+                            for offset, leg, prefix in self.reg[kv]]
 
     def unify_reg(self):
         """Arrange the register in common form."""
@@ -371,16 +370,16 @@ class RkDepotWork(RkCommon):
         # in the excepts is useful or even reverse the order of both
         offset, key = 0, None
         try:
-            slos, slky = self._version['offset'], self._version['key']
-            if self._version['rpaid'] != 'rpa1':
-                offset = int(self._header[slos], 16)
-            if self._version['rpaid'] != 'rpa2':
-                key = int(self._header[slky], 16)
+            slos, slky = self.version['offset'], self.version['key']
+            if self.version['rpaid'] != 'rpa1':
+                offset = int(self.header[slos], 16)
+            if self.version['rpaid'] != 'rpa2':
+                key = int(self.header[slky], 16)
 
-            if self._version['rpaid'] == 'rpa3' and key != self._version['key_org']:
-                slky_b = self._version['key_rv']
-                key = int(self._header[slky][slky_b], 16)
-                self._version.update(self._rpaformats['RPA-3.0rk'])
+            if self.version['rpaid'] == 'rpa3' and key != self.version['key_org']:
+                slky_b = self.version['key_rv']
+                key = int(self.header[slky][slky_b], 16)
+                self.version.update(self.rpaformats['RPA-3.0rk'])
 
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
@@ -394,22 +393,22 @@ class RkDepotWork(RkCommon):
     def collect_register(self):
         """Gets the depot's register through unzip and unpickle."""
         offset, key = self.get_cipher()
-        with self.depot.open('rb') as opfl:
-            opfl.seek(offset)
-            self._reg = pickle.loads(zlib.decompress(opfl.read()), encoding='bytes')
+        with self.depot.open('rb') as of:
+            of.seek(offset)
+            self.reg = pickle.loads(zlib.decompress(of.read()), encoding='bytes')
 
         self.unify_reg()
         if key is not None:
-            if 'key2' in self._version.keys():
-                key = key ^ self._version['key2']
+            if 'key2' in self.version.keys():
+                key = key ^ self.version['key2']
             self.unscrample_reg(key)
 
     def get_version_specs(self):
         """Yields for the given archive version the cipher data."""
         try:
-            for key, val in self._rpaspecs.items():
-                if key == self._version['rpaid']:
-                    self._version.update(val)
+            for key, val in self.rpaspecs.items():
+                if key == self.version['rpaid']:
+                    self.version.update(val)
                     break
         except KeyError:
             raise f"Error while aquiring version specifications for {self.depot}."
@@ -422,14 +421,14 @@ class RkDepotWork(RkCommon):
         because RPA 2/3 and the known custom formats passed this so far.
         """
         try:
-            magic = self._header.decode()
+            magic = self.header.decode()
         except UnicodeDecodeError:
             # Lets try this: rpa2/3 and custom headers are at 34/36 length
-            # if len(self._header) not in (34, 36) and self._header.startswith(b"x"):
-            #     magic = self._header[:1].decode()
+            # if len(self.header) not in (34, 36) and self.header.startswith(b"x"):
+            #     magic = self.header[:1].decode()
             # alternate: Coding should be cp1252 and zlib compression default (\x9c)
-            if len(self._header) not in (34, 36) and self._header.startswith(b"\x78\x9c"):
-                magic = self._header[:2].decode('cp1252')
+            if len(self.header) not in (34, 36) and self.header.startswith(b"\x78\x9c"):
+                magic = self.header[:2].decode('cp1252')
                 self.inf(1, "UnicodeDecodeError: Found possibly old RPA-1 format.",
                          m_sort='warn')
             else:
@@ -442,21 +441,21 @@ class RkDepotWork(RkCommon):
         """
         magic = self.get_header_start()
         try:
-            for key, val in self._rpaformats.items():
+            for key, val in self.rpaformats.items():
                 if key in magic:
-                    self._version.update(val)
+                    self.version.update(val)
                     self.count['fid_found'] += 1
 
             # NOTE:If no version is found the dict is empty; searching with a key
             # slice for 'rpaid' excepts a KeyError (better init dict with key?)
-            if 'rpa1' in self._version.values() and self.depot.suffix != '.rpi':
-                # self._version = {}
-                self._version.clear()
-            elif not self._version:
-                raise NoRpaOrUnknownWarning(self.depot, self._header)
+            if 'rpa1' in self.version.values() and self.depot.suffix != '.rpi':
+                # self.version = {}
+                self.version.clear()
+            elif not self.version:
+                raise NoRpaOrUnknownWarning(self.depot, self.header)
             elif self.count['fid_found'] > 1:
-                raise AmbiguousHeaderError(self._version)
-            elif 'zix12a' in self._version.values() or 'zix12b' in self._version.values():
+                raise AmbiguousHeaderError(self.version)
+            elif 'zix12a' in self.version.values() or 'zix12b' in self.version.values():
                 raise NotImplementedError(
                     self.inf(0, f"{self.depot!r} is a unsupported format.\nFound "
                              f"archive header: > {self._header}", m_sort='cau'))
@@ -471,9 +470,9 @@ class RkDepotWork(RkCommon):
 
     def get_header(self):
         """Opens file and reads header line in."""
-        with self.depot.open('rb') as opfl:
-            opfl.seek(0)
-            self._header = opfl.readline()
+        with self.depot.open('rb') as of:
+            of.seek(0)
+            self.header = of.readline()
 
     # FIXME Path related - should be in on of the other classes
     def check_out_pt(self, f_pt):
@@ -490,7 +489,7 @@ class RkDepotWork(RkCommon):
 
     def unpack_depot(self):
         """Manages the unpacking of the depot files."""
-        for file_num, (file_pt, pos_stats) in enumerate(self._reg.items()):
+        for file_num, (file_pt, pos_stats) in enumerate(self.reg.items()):
             try:
                 tmp_path = self.check_out_pt(file_pt)
                 self.make_dirstruct(tmp_path.parent)
@@ -498,8 +497,8 @@ class RkDepotWork(RkCommon):
                 tmp_file_data = self.extract_data(file_pt, pos_stats)
                 self.inf(2, f"{self.telltale(file_num, RkCommon.count['fle_total'], file_pt)}")
 
-                with tmp_path.open('wb') as opfl:
-                    opfl.write(tmp_file_data)
+                with tmp_path.open('wb') as of:
+                    of.write(tmp_file_data)
             except TypeError as err:
                 raise f"{err}: Unknown error while trying to extract a file."
 
@@ -536,10 +535,10 @@ class RkDepotWork(RkCommon):
             elif self.dep_initstate is True:
                 self.get_version_specs()
                 self.collect_register()
-                self._reg = {self.strpth(_pt): _d for _pt, _d in self._reg.items()}
-                RkCommon.count['fle_total'] = len(self._reg)
+                self.reg = {str(_pt): _d for _pt, _d in self.reg.items()}
+                RkCommon.count['fle_total'] = len(self.reg)
 
-            if 'alias' in self._version.keys():
+            if 'alias' in self.version.keys():
                 self.inf(2, "Unofficial RPA found. "
                          f"RPA variant name is '{self._version['alias']}'")
             else:
@@ -556,7 +555,7 @@ class RkMain(RkPathWork, RkDepotWork):
     Positional:
         {inp} takes `path` or `path/filename.suffix`
     Keyword:
-        {task=['exp'|'lst'|'tst'|'sim']} the intendet request for the app run
+        {task=['extract'|'listing'|'test'|'simulate']} the intendet request for the app run
         {outdir=NEWDIR} changes output directory for the archiv content
         {verbose=[0|1|2]} information output level; defaults to 1
     """
@@ -572,9 +571,9 @@ class RkMain(RkPathWork, RkDepotWork):
 
     def done_msg(self):
         """Outputs a info when all is done."""
-        if self.task in ['exp', 'sim']:
-            if RkCommon.count['dep_done'] > 0:
-                if self.task == 'exp':
+        if self.task in ['extract', 'simulate']:
+            if RkCommon.count["dep_done"] > 0:
+                if self.task == 'extract':
                     self.inf(0, f" Done. We unpacked {RkCommon.count['dep_done']} "
                              "archive(s).")
                 else:
@@ -582,7 +581,7 @@ class RkMain(RkPathWork, RkDepotWork):
                              f" {RkCommon.count['dep_done']} archive(s).")
             else:
                 self.inf(0, "Oops! No archives where processed...")
-        elif self.task in ['lst', 'tst']:
+        elif self.task in ['listing', 'test']:
             self.inf(0, "Completed!")
 
     def begin_msg(self):
@@ -607,81 +606,90 @@ class RkMain(RkPathWork, RkDepotWork):
             if self.dep_initstate is False:
                 continue
 
-            if self.task in ['exp', 'sim']:
+            if self.task in ['extract', 'simulate']:
                 self.unpack_depot()
-            elif self.task == 'lst':
+            elif self.task == 'listing':
                 self.list_depot_content()
-            elif self.task == 'tst':
+            elif self.task == 'test':
                 self.test_depot()
 
             RkCommon.count['dep_done'] += 1
-            self.inf(1, f"{self.telltale(RkCommon.count['dep_done'], RkCommon.count['dep_found'], self.depot)}")
+            report = self.telltale(RkCommon.count['dep_done'],  RkCommon.count['dep_found'],
+                                   self.depot)
+            self.inf(1, f"{report}")
             self.clear_rk_vars()
 
         # FIXME: Subpar behavior. Call dispose for std task of moving unpacked
         # content in place. Should be normal func first. e.g.
-        if self.task in ['exp', 'sim']:
-            self._dispose()
+        if self.task in ['extract', 'simulate']:
+            self.dispose()
         self.done_msg()
 
 
 def parse_args():
     """Argument parser to provide functionality for the command-line interface."""
-    def valid_switch():
-        """Helper function to determine if a task is choosen."""
-        if not args.task:
-            aps.print_help()
-            raise argparse.ArgumentError(args.task, "\nNo task requested; "
-                                         "either -e, -l, -t or -s is required.")
 
     desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
     rpakit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
     rpakit.py -t /home/{USERNAME}/otherdir/file.rpa
-    rpakit.py -e c:/Users/{USERNAME}/my_folder/A123.rpa"""
-    epi = "Standard output dir is set to ´{Target}/rpakit_out/´. Change with option -o."
-    aps = argparse.ArgumentParser(description=desc,
-                                  epilog=epi,
-                                  formatter_class=argparse.RawTextHelpFormatter)
-    aps.add_argument('inpath',
-                     metavar='Target',
-                     action='store',
-                     type=str,
-                     help='Directory path (to search) OR rpa file path to unpack.')
-    opts = aps.add_mutually_exclusive_group()
-    opts.add_argument('-e', '--expand',
-                      dest='task',
-                      action='store_const',
-                      const='exp',
-                      help='Unpacks all stored files.')
-    opts.add_argument('-l', '--list',
-                      dest='task',
-                      action='store_const',
-                      const='lst',
-                      help='Gives a listing of all stored files.')
-    opts.add_argument('-t', '--test',
-                      dest='task',
-                      action='store_const',
-                      const='tst',
-                      help='Tests if archive(s) are a known format.')
-    opts.add_argument('-s', '--simulate',
-                      dest='task',
-                      action='store_const',
-                      const='sim',
-                      help='Unpacks all stored files just temporary.')
-    aps.add_argument("-o", "--outdir",
-                     action='store',
-                     type=str,
-                     help="Extracts to the given path instead of standard.")
-    aps.add_argument('--verbose',
-                     metavar='level [0-2]',
-                     type=int,
-                     choices=range(0, 3),
-                     help='Amount of info output. 0:none, 2:much, default:1')
-    aps.add_argument('--version',
-                     action='version',
-                     version=f'%(prog)s : { __title__} {__version__}')
-    args = aps.parse_args()
-    valid_switch()
+    rpakit.py --extract c:/Users/{USERNAME}/my_folder/A123.rpa"""
+    epi = "Default output dir is set to `{Target}/rpakit_out/`. Change with option -o."
+    ap = argparse.ArgumentParser(
+        description=desc,
+        epilog=epi,
+        formatter_class=argparse.RawTextHelpFormatter)
+    ap.add_argument(
+        'inpath',
+        metavar='Target',
+        action='store',
+        type=str,
+        help='Directory path (to search) OR rpa file path to unpack.')
+    opts = ap.add_mutually_exclusive_group(required=True)
+    opts.add_argument(
+        '-e',
+        '--extract',
+        dest='task',
+        action='store_const',
+        const='extract',
+        help='Extracts all stored files and dirs.')
+    opts.add_argument(
+        '-l',
+        '--list',
+        dest='task',
+        action='store_const',
+        const='listing',
+        help='Prints a listing of all stored files.')
+    opts.add_argument(
+        '-t',
+        '--test',
+        dest='task',
+        action='store_const',
+        const='test',
+        help='Tests if archive(s) are a known format.')
+    opts.add_argument(
+        '-s',
+        '--simulate',
+        dest='task',
+        action='store_const',
+        const='simulate',
+        help='Unpacks all stored files just temporary.')
+    ap.add_argument(
+        "-o",
+        "--outdir",
+        action='store',
+        type=str,
+        help="Extracts to the given path instead to the default destination.")
+    ap.add_argument(
+        '--verbose',
+        metavar='level [0-2]',
+        type=int,
+        choices=range(0, 3),
+        help='Amount of info output. 0:none, 2:much, default:1')
+    ap.add_argument(
+        '--version',
+        action='version',
+        version=f"{ __title__} {__version__}")
+    args = ap.parse_args()
     return args
 
 
