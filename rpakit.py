@@ -33,7 +33,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.44.0-alpha'
+__version__ = '0.45.0-alpha'
 
 
 class RpaKitError(Exception):
@@ -93,8 +93,8 @@ class RkCommon:
         '\x1b[0m', '\x1b[03m', '\x1b[31m', '\x1b[32m', '\x1b[33m', '\x1b[34m',
         '\x1b[93m', '\x1b[44;30m', '\x1b[45;30m' if tty_colors else '')
 
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.name!r})"
+    # def __str__(self):
+    #     return f"{self.__class__.__name__}({self.name!r})"
 
     @classmethod
     def telltale(cls, fraction, total, obj):
@@ -121,9 +121,9 @@ class RkCommon:
             print(textwrap.fill(msg, width=90, initial_indent=ind1,
                   subsequent_indent=ind2))
 
-    @classmethod
-    def strpth(cls, data):
-        return data if isinstance(data, str) else data.decode()
+    # @classmethod
+    # def strpth(cls, data):
+    #     return data if isinstance(data, str) else data.decode()
 
     @classmethod
     def void_dir(cls, dst):
@@ -266,6 +266,25 @@ class RkDepotWork(RkCommon):
     The class for analyzing, testing and unpacking RPA files. All needet
     inputs (depot, output path) are internaly providet.
     """
+    # IDEA: Alternate for rpaversion dicts
+    # rpaformats are simple functions of (archive) -> archivetype
+    # rpaformats = []
+    # def rpaformat(fnc):
+    #     rpaformats.append(fnc)
+    #     return fnc
+
+    # @rpaformat
+    # def rpa_v1(inp):
+    #     """
+    #     Format defintion for RPA1 format
+    #     """
+
+    # for extry in rpaformats:
+    #     try:
+    #         data = extry(inp)
+    #     except ValueError:
+    #         pass
+
 
     rpaformats = {
         'x': {

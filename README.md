@@ -1,20 +1,30 @@
-[![made-with-python](https://img.shields.io/badge/Python%20Version-3.6%2B-informational?style=flat-square)](https://www.python.org/) [![Apache license](https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square)](https://github.com/madeddy/RpaKit/blob/master/LICENSE) [![Generic badge](https://img.shields.io/badge/RpaKit_0.36.2_alpha-development-orange.svg?style=flat-square)](https://github.com/madeddy/RpaKit) [![RpaKit issues](https://img.shields.io/github/issues/madeddy/RpaKit?label=Issues&style=flat-square)](https://github.com/madeddy/RpaKit)
-<!-- []([![HitCount](http://hits.dwyl.io/madeddy/RpaKit.svg)](http://hits.dwyl.io/madeddy/RpaKit))
+[![Python Version][py]][l_py] [![Ren'Py Version][renpy]][l_renpy] [![License][b_licence]][l_licence] ![App_version][b_app_version] [![License][b_hits]][l_hits]
+<!-- Badge links -->
+[py]: https://img.shields.io/badge/3.9%2B-3776AB?style=flat-square&logo=python&logoColor=fff&label=Python%20Version&labelColor=3776AB&color=gold
 
-Github automatic version linking from shield.io is with release/tag possible
--->
+[l_py]: https://python.org
+[renpy]: https://img.shields.io/badge/Ren'Py-ac6464?logo=renpy&logoColor=fff&style=flat-square
+[l_renpy]: https://renpy.org
+
+[b_licence]: https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square
+[l_licence]: LICENSE
+
+[b_app_version]: https://img.shields.io/badge/RpaKit_0.45.0_alpha-development-orange.svg?style=flat-square
+
+[b_hits]: https://hits.sh/github.com/madeddy/RpaKit.svg?style=flat-square&label=Access%20Count&color=lightgrey
+[l_hits]: https://hits.sh/github.com/madeddy/RpaKit
+
 # RPA Kit
-RPA Kit is a small application for decompressing RenPy archives.
+RPA Kit is a application for decompressing Ren'Py archives.
 
-It takes as input a archive file or a directory, which is then searched for legit
-archives, and unpacks the content of them in a directory of choice.
-Its also possible to read-only listing of the content or testing if the given archives
-format type supported is.
+It takes as input a archive file or a directory, which is then searched for legit archives,
+and unpacks the content of them in a directory of choice. Its also possible to read-only
+listing of the content or testing if the given archives format type supported is.
 
 ## Usage
 ### Command line parameter overview
 ```
-rpakit [-e|-l|-t] [-o OUTPUT] [--verbose] [-version] [-h, --help] Target
+rpakit [-e|-l|-t|-s] [-o OUTPUT] [--verbose] [-version] [-h, --help] Target
 
 positional parameters:
   Target                Directory path to search OR path of a RPA file to work on.
@@ -52,95 +62,66 @@ console. The verboseness was also set to highest level (tell everything).
 
 
 ### API
-
 >The API is possible not final!
 
-To provide the functionality of _**Rpa Kit**_ in other projects, the programs classes
-can very easily included. Besides the code just for CLI use, the core functionality is 
-organized in four classes in diamond inheritance.
-Overview of this classes:
+To provide the functionality of _**Rpa Kit**_ in other projects, the programs classes can be
+included. Besides the code for CLI use, the core functionality is organized in four classes in
+diamond inheritance.
+Short overview of this classes:
 
-```python
-class RkMain(RkPathWork, RkDepotWork):
-    """Main class to process args and executing the related methods."""
-
-    def __init__(self, inpath, outdir=None, verbose=None, **kwargs):
-```
-
+#### class RkMain
+Entry class to process args and executing the related methods. Parameters:
 * `inpath`: _**str or pathlike, required**_
     The archive file-path to open or a directory path with archives.
-    Absolute paths preferred.
-
+    Absolute paths are preferred.
+* `task`: _**str, required**_
+    Sets the wanted task. Possible arguments are _exp_ (expand), _lst_ (listing),
+    _tst_(testing), _sim_(simulate)
 * `outdir`: _**str or pathlike, optional**_
-    Sets the name of the output directory. If _None_ the standard is used.
-
+    Sets the name of the output directory. If _None_ the default is used.
 * `verbose`: _**int, optional**_
     Print info about what we are doing. Values: 0-2; Defaults to 1
 
-* `**kwargs`
-  - `task`: _**str, required**_
-    Sets the wanted task. Possible arguments are _exp_ (expand),
-    _lst_ (listing), _tst_(testing), _sim_(simulate)
 
+#### class RkDepotWork
+This class is the apps core for analyzing, testing and unpacking/decoding RPA files. All
+needed inputs (depot, output path) are internaly providet.
 
-```python
-class RkDepotWork(RkCommon):
-    """
-    This class is the apps core for analyzing, testing and unpacking/decoding RPA
-    files. All needet inputs (depot, output path) are internaly providet.
-    """
-```
-This class holds also two important dicts with the informations about
-the RPA formats. Here can be easily additional formats configured.
+This class holds also two important dicts with the informations about the RPA formats. Here
+can be easily additional formats configured.
 <!-- `_rpaformats = {"header":{'rpaid': ''
                           'desc': ''
                           'alias': ''}}`
 
 `_rpaspecs = {{}}` -->
 
-```python
-class RkPathwork(RkCommon):
-    """
-    Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path)
-    are internaly providet. If input is a dir it searches there for archives,
-    checks and filters them and puts them in a list.
-    A archiv as input skips the search part.
-    """
-```
-If a advanced enough user does the path preparations in some other way/place and
-provides the archives itself to the other classes this one could even be spared.
+#### class RkPathwork
+Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path) are internaly
+provided. If input is a dir it searches there for archives, checks and filters them and puts
+them in a list. A archiv as input skips the search part.
 
-```python
-class RkCommon:
-    """
-    "Rpa Kit Common" provides some shared methods and variables for the other
-    classes.
-    """
-```
+If wanted, users can do the path preparations in some other way/place and provide the archives
+itself to the other classes, instead with use of this one.
+
+#### class RkCommon
+Simple base class to provide some shared methods and variables for the other classes.
 
 
-<!-- ```python
-rkm = RKmain(inpath, outdir=None, verbose=None, **kwargs)
-rkm.rk_control()
-``` -->
+### Motivation - _Why this project?_
+This began in 2017 as another learning experience in Python and and to understand some more
+about RenPy internals. So i needed a project for this.
 
-### Motivation - _Why another RPA unpacker?_
-This began in 2017 with a few lines of code and as another learning experience in Python
-coding and to understand some more about RenPy internals. Basicly i extended _rpatool_
-with some extras.
-
-Over time i hit more walls with the codebase and the available apps for RPA work where of
-limited usability to me. Unmaintained state, cumbersome extensibility and not working
-functionality increasingly dissatisfied me.
-Some whishes where:
-- feeding it simply a directory with rpa files instead a single file
+Some of the goals where:
+- Working also on a directory with rpa files instead just a file
+- easy extensibility for new formats
 - support for more rpa formats
-- easy extensibility for new rpa formats
 - additional info output
 
-Fall 2019 i began to do serious changes and extensions on _rpatools_ api. From there it
-got fast out of control and i ended up with a completly rewritten app. Hopefully also
-of use to other people.
+In the future there will possibly other changes or extensions. If time allows and motivation at
+the same time on a high is, we copuld see:
+- Info output with classic logging
+- Format specs and some mechanics move to dedicated classes per type
+
 
 ## Legal
 ### License
@@ -148,14 +129,12 @@ of use to other people.
 __RPA Kit__ is licensed under Apache-2.0. See the [LICENSE](LICENSE) file for more details.
 
 ### Disclaimer
-
-This program is intended for people who have the legal rights or the consent of
-the authors to access or decompress the target files. Any illegal or otherwise
-unindented usage of this software is highly discouraged and has here no support.
+This program is intended for people who have the legal rights or the consent of the target
+app authors to access or decompress the archive files. Any illegal or otherwise unindented
+usage of this software is discouraged and unsupported.
 
 ### Credits
-
 This software was developed with some orientation on [RenPy's](https://github.com/renpy/renpy) and [rpatool's](https://github.com/shizmob/rpatool) code for
 the work with RPA files.
-Credits for the development of the RenPy archive format belong to the contributors of
-the RenPy project.
+Credits for the development of the RenPy archive format belong to the contributors of the
+Ren'Py project.
