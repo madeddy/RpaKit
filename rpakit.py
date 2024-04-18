@@ -9,15 +9,15 @@ also possible.
 
 # TODO: Add functionality to force rpa format version from user input
 
-import os
-import sys
 import argparse
-from pathlib import Path as pt
-import tempfile
-import shutil
+import glob
+import os
 import pickle
-import zlib
+import shutil
+import sys
+import tempfile
 import textwrap
+import zlib
 from pathlib import Path
 
 tty_colors = True
@@ -267,50 +267,86 @@ class RkDepotWork(RkCommon):
     inputs (depot, output path) are internaly providet.
     """
 
-    _rpaformats = {'x': {'rpaid': 'rpa1',
-                         'desc': 'Legacy type RPA-1.0'},
-                   'RPA-2.0 ': {'rpaid': 'rpa2',
-                                'desc': 'Legacy type RPA-2.0'},
-                   'RPA-3.0 ': {'rpaid': 'rpa3',
-                                'desc': 'Standard type RPA-3.0'},
-                   # Header ID is the same as rpa3 but double keys are not allowed
-                   'RPA-3.0rk': {'rpaid': 'rpa3rk',
-                                 'alias': 'RPA 3 rk',
-                                 'desc': 'Custom type of RPA-3.0 with reversed key'},
-                   'RPI-3.0': {'rpaid': 'rpa32',
-                               'alias': 'rpi3',
-                               'desc': 'Custom type RPI-3.0'},
-                   'RPA-3.1': {'rpaid': 'rpa3',
-                               'alias': 'rpa31',
-                               'desc': 'Custom type RPA-3.1, a alias of RPA-3.0'},
-                   'RPA-3.2': {'rpaid': 'rpa32',
-                               'desc': 'Custom type RPA-3.2'},
-                   'RPA-4.0': {'rpaid': 'rpa3',
-                               'alias': 'rpa4',
-                               'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'},
-                   'ALT-1.0': {'rpaid': 'alt1',
-                               'alias': 'ALT 1',
-                               'desc': 'Custom type ALT-1.0'},
-                   'ZiX-12A': {'rpaid': 'zix12a',
-                               'alias': 'ZIX 12a',
-                               'desc': 'Custom type ZiX-12A'},
-                   'ZiX-12B': {'rpaid': 'zix12b',
-                               'alias': 'ZIX 12b',
-                               'desc': 'Custom type ZiX-12B'}}
+    rpaformats = {
+        'x': {
+            'rpaid': 'rpa1',
+            'desc': 'Legacy type RPA-1.0'
+        },
+        'RPA-2.0 ': {
+            'rpaid': 'rpa2',
+            'desc': 'Legacy type RPA-2.0'
+        },
+        'RPA-3.0 ': {
+            'rpaid': 'rpa3',
+            'desc': 'Standard type RPA-3.0'
+        },
+        # Header ID is the same as rpa3 but double keys are not allowed
+        'RPA-3.0rk': {
+            'rpaid': 'rpa3rk',
+            'alias': 'RPA 3 rk',
+            'desc': 'Custom type of RPA-3.0 with reversed key'
+        },
+        'RPI-3.0': {
+            'rpaid': 'rpa32',
+            'alias': 'rpi3',
+            'desc': 'Custom type RPI-3.0'
+        },
+        'RPA-3.1': {
+            'rpaid': 'rpa3',
+            'alias': 'rpa31',
+            'desc': 'Custom type RPA-3.1, a alias of RPA-3.0'
+        },
+        'RPA-3.2': {
+            'rpaid': 'rpa32',
+            'desc': 'Custom type RPA-3.2'
+        },
+        'RPA-4.0': {
+            'rpaid': 'rpa3',
+            'alias': 'rpa4',
+            'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'
+        },
+        'ALT-1.0': {
+            'rpaid': 'alt1',
+            'alias': 'ALT 1',
+            'desc': 'Custom type ALT-1.0'
+        },
+        'ZiX-12A': {
+            'rpaid': 'zix12a',
+            'alias': 'ZIX 12a',
+            'desc': 'Custom type ZiX-12A'
+        },
+        'ZiX-12B': {
+            'rpaid': 'zix12b',
+            'alias': 'ZIX 12b',
+            'desc': 'Custom type ZiX-12B'
+        }
+    }
 
-    _rpaspecs = {'rpa1': {'offset': 0,
-                          'key': None},
-                 'rpa2': {'offset': slice(8, None),
-                          'key': None},
-                 'rpa3': {'offset': slice(8, 24),
-                          'key': slice(25, 33),
-                          'key_org': 1111638594,
-                          'key_rv': slice(None, None, -1)},
-                 'rpa32': {'offset': slice(8, 24),
-                           'key': slice(27, 35)},
-                 'alt1': {'offset': slice(17, 33),
-                          'key': slice(8, 16),
-                          'key2': 0xDABE8DF0}}
+    rpaspecs = {
+        'rpa1': {
+            'offset': 0,
+            'key': None
+        },
+        'rpa2': {
+            'offset': slice(8, None),
+            'key': None
+        },
+        'rpa3': {
+            'offset': slice(8, 24),
+            'key': slice(25, 33),
+            'key_org': 1111638594,
+            'key_rv': slice(None, None, -1)
+        },
+        'rpa32': {
+            'offset': slice(8, 24),
+            'key': slice(27, 35)
+        },
+        'alt1': {
+            'offset': slice(17, 33),
+            'key': slice(8, 16),
+            'key2': 0xDABE8DF0
+        }
+    }
 
     def __init__(self):
         super().__init__()
