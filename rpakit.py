@@ -213,50 +213,40 @@ class RkPathWork(RkCommon):
                     self.dep_lst.remove(twin)
                     RkCommon.count['dep_found'] -= 1
 
-    @staticmethod
-    def valid_archives(entry):
-        """Checks path objects for identity by extension. RPA have no real magic num."""
-        return bool(entry.is_file() and entry.suffix in ['.rpa', '.rpi', '.rpc'])
+    def traverse(self, inpath):
+        """
+        Filters from input path for rpa and returns them. Recurses into all given directorys
+        by calling itself.
+        """
+        if inpath.is_file() and inpath.suffix in ['.rpa', '.rpi', '.rpc']:
+            yield inpath
+        elif inpath.is_dir():
+            for item in inpath.iterdir():
+                yield from self.traverse(item)
 
-    def add_depot(self, depot):
-        """Adds by extension as RPA identified files to the depot list."""
-        if self.valid_archives(depot):
-            self.dep_lst.append(depot)
-            RkCommon.count['dep_found'] += 1
 
-    def search_rpa(self):
-        """Searches dir and calls another method which identifys RPA files."""
-        for entry in os.scandir(self._inp_pt):
-            entry_pth = pt(entry.path)
-            self.add_depot(entry_pth)
-
-    def check_inpath(self):
-        """Helper to check if given path exist."""
-        if not self.raw_inp.exists() or self.raw_inp.is_symlink():
-            raise FileNotFoundError(f"Could the given path object ({self.raw_inp})"
-                                    "not find! Check the given input.")
-        self.raw_inp = self.raw_inp.resolve(strict=True)
+    def filter_raw_input(self):
+        """Checks input and casts output to pathlike state."""
+        # CONTROL PRINT
+        print(f"RAW INP: {self.raw_inp} TYPE: {type(self.raw_inp)}")
+        str_inp = str(self.raw_inp)
+        retval = [Path(elem).resolve(strict=True) for elem in glob.glob(str_inp)]
+        if not retval:
+            print(f"Input path not found: {self.raw_inp}")
+        return retval
 
     def pathworker(self):
         """This prepairs the given path and output dir. It dicovers if the input
         is a file or directory and takes the according actions.
         """
-        try:
-            self.check_inpath()
 
-            if self.raw_inp.is_dir():
-                self._inp_pt = self.raw_inp
-                self.search_rpa()
-            elif self.raw_inp.is_file():
-                self.add_depot(self.raw_inp)
-                self._inp_pt = self.raw_inp.parent
-            else:
-                raise FileNotFoundError("File not found!")
+        for globitem in self.filter_raw_input():
+            for elem in self.traverse(globitem):
+                self.dep_lst.append(elem)
+                RkCommon.count['dep_found'] += 1
 
-        except OSError as err:
-            raise RpaKitError(
-                f"{err}: Error while testing and prepairing input path "
-                f">{self.raw_inp}< for the main job.")
+            if not self.inp_pt:
+                self.inp_pt = self.raw_inp.parent if self.raw_inp.is_file() else self.raw_inp
 
         self.ident_paired_depot()
 
