@@ -3,11 +3,10 @@
 """
 RPAKit is a small app which searches in a given path(if not file) RenPy archives
 and decompresses the content in a custom-made subdirectory. Just listing without
-writing or testing & identifying the archiv or simulating the expand process is
+writing or testing & identifying the archiv or simulating the extract process is
 also possible.
 """
 
-# TODO: shutil is a nightmare; perhaps code custom move functionality
 # TODO: Add functionality to force rpa format version from user input
 
 import os
@@ -102,6 +101,7 @@ class RkCommon:
         """Returns a percentage-meter like output for use in tty."""
         return f"[{cls.bg_blu}{fraction / float(total):05.1%}{cls.std}] {obj!s:>4}"
 
+    # TODO: Use logging instead
     @classmethod
     def inf(cls, inf_level, msg, m_sort=None):
         """Outputs by the current verboseness level allowed infos."""
@@ -161,6 +161,10 @@ class RkPathWork(RkCommon):
             # TODO: if its long standard we use pathlikes as source
             # means users need py3.9+
     def dispose(self):
+        """
+        Moves the extracted content to output and removes temporary dir struct. In simulate
+        mode everything is thrown away.
+        """
 
         if self.task == 'extract':
             # FIXME: move does error if src exists in dst; how?
@@ -197,7 +201,16 @@ class RkPathWork(RkCommon):
         self.make_dirstruct(self.out_pt)
 
     def ident_paired_depot(self):
-        """Identifys rpa1 type paired archives and removes one from the list."""
+        """
+        Identifies the rpa 1 type paired archive, which consisting of a rpa and rpi suffixed
+        files with the same name.
+        rpi: Have the index position data for the rpa stored
+        rpa: Have the the file data stored
+
+        This function removes the rpa from our list because it would error later. The index
+        is read from the rpi and in the extraction func switched to the rpa suffix.
+        """
+
         lst_copy = self.dep_lst[:]
         for entry in lst_copy:
             if entry.suffix == '.rpi':
@@ -477,7 +490,10 @@ class RkDepotWork(RkCommon):
 
     # FIXME Path related - should be in on of the other classes
     def check_out_pt(self, f_pt):
-        """Checks output path and if needet renames file."""
+        """
+        Checks if output path legit is and if needed renames it. This can happen if objects
+        in the archive are manipulated or broken. e.g. weird encoding, fradulent file type
+        """
         tmp_pt = self.rk_tmp_dir / f_pt
         # tmp_pt = self.out_pt / f_pt
         if tmp_pt.is_dir() or f_pt == "":
