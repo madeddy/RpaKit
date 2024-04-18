@@ -412,7 +412,7 @@ class RkDepotWork(RkCommon):
 
     def unify_reg(self):
         """Arrange the register in common form."""
-        for val in self._reg.values():
+        for val in self.reg.values():
             if len(val[0]) == 2:
                 for num, _ in enumerate(val):
                     val[num] += (b'',)
@@ -569,16 +569,16 @@ class RkDepotWork(RkCommon):
         # outp_dst = sys.stdout if "bla" else fl
         self.inf(2, "Listing archive files:")
         print(f"Depot {RkCommon.count['dep_done'] + 1}: {self.depot.name}")
-        for num, (fln, flidx) in enumerate(sorted(self._reg.items())):
+        for num, (fln, flidx) in enumerate(sorted(self.reg.items())):
             print(f"{' ' * 2}File {num}: {fln}\n{' ' * 4}Index data: {flidx}")
 
         self.inf(1, f"Archive {self.depot.name!s} holds "
-                 f"{len(self._reg.keys())} files.")
+                 f"{len(self.reg.keys())} files.")
 
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
         self.inf(0, f"For archive > {self.depot.name} the identified version "
-                 f"variant is: {self.bg_blu}{self._version['desc']!r}{self.std}")
+                 f"variant is: {self.bg_blu}{self.version['desc']!r}{self.std}")
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
@@ -591,12 +591,12 @@ class RkDepotWork(RkCommon):
             elif self.dep_initstate is True:
                 self.get_version_specs()
                 self.collect_register()
-                self.reg = {str(_pt): _d for _pt, _d in self.reg.items()}
+                self.reg = {str(file_pt): pos_data for file_pt, pos_data in self.reg.items()}
                 RkCommon.count['fle_total'] = len(self.reg)
 
             if 'alias' in self.version.keys():
                 self.inf(2, "Unofficial RPA found. "
-                         f"RPA variant name is '{self._version['alias']}'")
+                         f"RPA variant name is '{self.version['alias']}'")
             else:
                 self.inf(2, "Official RPA found.")
 
