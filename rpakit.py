@@ -154,12 +154,6 @@ class RkPathWork(RkCommon):
         self.raw_inp = None
         self.task = None
 
-        """Removes temporary content and in simulate mode also the outdir."""
-
-            # NOTE: Converting 'src' to str to avoid bugs.python.org/issue32689
-            # fixed in py 3.9 - move accepts now pathlike
-            # TODO: if its long standard we use pathlikes as source
-            # means users need py3.9+
     def dispose(self):
         """
         Moves the extracted content to output and removes temporary dir struct. In simulate
@@ -169,8 +163,8 @@ class RkPathWork(RkCommon):
         if self.task == 'extract':
             # FIXME: move does error if src exists in dst; how?
             for entry in self.rk_tmp_dir.iterdir():
-                # src = (entry).relative_to(self.rk_tmp_dir)
-                shutil.move(str(entry), self.out_pt)
+                # shutil.move(str(entry), self.out_pt)
+                shutil.move(entry, self.out_pt)
 
             # TODO: write code to check output
             if self.void_dir(self.out_pt):
