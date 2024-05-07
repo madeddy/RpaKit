@@ -127,10 +127,6 @@ class RkCommon:
             print(textwrap.fill(msg, width=90, initial_indent=ind1,
                   subsequent_indent=ind2))
 
-    # @classmethod
-    # def strpth(cls, data):
-    #     return data if isinstance(data, str) else data.decode()
-
     @classmethod
     def void_dir(cls, dst):
         """Checks if given directory has content."""
@@ -225,8 +221,7 @@ class RkPathWork(RkCommon):
 
     def filter_raw_input(self):
         """Checks input and casts output to pathlike state."""
-        # CONTROL PRINT
-        print(f"RAW INP: {self.raw_inp} TYPE: {type(self.raw_inp)}")
+
         str_inp = str(self.raw_inp)
         retval = [Path(elem).resolve(strict=True) for elem in glob.glob(str_inp)]
         if not retval:
@@ -500,7 +495,6 @@ class RkDepotWork(RkCommon):
             # NOTE:If no version is found the dict is empty; searching with a key
             # slice for 'rpaid' excepts a KeyError (better init dict with key?)
             if 'rpa1' in self.version.values() and self.depot.suffix != '.rpi':
-                # self.version = {}
                 self.version.clear()
             elif not self.version:
                 raise NoRpaOrUnknownWarning(self.depot, self.header)
@@ -755,7 +749,6 @@ def main():
     cfg = parse_args()
     rkm = RkMain(cfg.inpath, cfg.task, outdir=cfg.outdir, verbose=cfg.verbose)
     rkm.rk_control()
-
 
 if __name__ == '__main__':
     main()
