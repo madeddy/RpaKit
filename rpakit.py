@@ -89,12 +89,18 @@ class RkCommon:
     rk_tmp_dir = None
     out_pt = None
     # tty color code shorthands
-    std, ul, red, gre, ora, blu, ylw, bg_blu, bg_red = (
-        '\x1b[0m', '\x1b[03m', '\x1b[31m', '\x1b[32m', '\x1b[33m', '\x1b[34m',
-        '\x1b[93m', '\x1b[44;30m', '\x1b[45;30m' if tty_colors else '')
-
-    # def __str__(self):
-    #     return f"{self.__class__.__name__}({self.name!r})"
+    if tty_colors:
+        std = '\x1b[0m'
+        ul = '\x1b[03m'
+        red = '\x1b[31m'
+        gre = '\x1b[32m'
+        ora = '\x1b[33m'
+        blu = '\x1b[34m'
+        ylw = '\x1b[93m'
+        bg_blu = '\x1b[44;30m'
+        bg_red = '\x1b[45;30m'
+    else:
+        std = ul = red = gre = ora = blu = ylw = bg_blu = bg_red = ''
 
     @classmethod
     def telltale(cls, fraction, total, obj):
