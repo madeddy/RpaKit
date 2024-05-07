@@ -11,13 +11,13 @@ also possible.
 
 import argparse
 import glob
-import os
 import pickle
 import shutil
 import sys
 import tempfile
 import textwrap
 import zlib
+from os import urandom
 from pathlib import Path
 
 tty_colors = True
@@ -525,18 +525,15 @@ class RkDepotWork(RkCommon):
             of.seek(0)
             self.header = of.readline()
 
-    # FIXME Path related - should be in on of the other classes
     def check_out_pt(self, f_pt):
         """
         Checks if output path legit is and if needed renames it. This can happen if objects
         in the archive are manipulated or broken. e.g. weird encoding, fradulent file type
         """
         tmp_pt = self.rk_tmp_dir / f_pt
-        # tmp_pt = self.out_pt / f_pt
         if tmp_pt.is_dir() or f_pt == "":
-            rand_fn = '0_' + os.urandom(2).hex() + '.BAD'
+            rand_fn = '0_' + urandom(2).hex() + '.BAD'
             tmp_pt = self.rk_tmp_dir / rand_fn
-            # tmp_pt = self.out_pt / rand_fn
             self.inf(2, "Possible invalid archive! A filename was replaced with"
                      f"the new name '{rand_fn}'.")
         return tmp_pt
