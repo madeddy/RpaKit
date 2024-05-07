@@ -9,6 +9,13 @@ also possible.
 
 # TODO: Add functionality to force rpa format version from user input
 
+__title__ = 'RPA Kit'
+__license__ = 'Apache 2.0'
+__author__ = 'madeddy'
+__status__ = 'Development'
+__version__ = '0.46.0-alpha'
+
+
 import argparse
 import glob
 import pickle
@@ -27,13 +34,6 @@ if sys.platform.startswith('win32'):
         init(autoreset=True)
     except ImportError:
         tty_colors = False
-
-
-__title__ = 'RPA Kit'
-__license__ = 'Apache 2.0'
-__author__ = 'madeddy'
-__status__ = 'Development'
-__version__ = '0.45.0-alpha'
 
 
 class RpaKitError(Exception):
@@ -151,9 +151,9 @@ class RkPathWork(RkCommon):
 
     def __init__(self):
         super().__init__()
-        self.dep_lst = []
-        self.inp_pt = None
         self.raw_inp = None
+        self.inp_pt = None
+        self.dep_lst = []
         self.task = None
 
     def _dispose(self):
@@ -429,11 +429,11 @@ class RkDepotWork(RkCommon):
 
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
-            raise f"{err}: Problem with the format data encountered. Perhaps " \
-                "the RPA is malformed."
+            raise (f"{err}: Problem with the format data encountered. Perhaps "
+                   "the RPA is malformed.")
         except TypeError as err:
-            raise f"{err}: Somehow the wrong data types had a meeting in here. " \
-                "They did'n like each other."
+            raise (f"{err}: Somehow the wrong data types had a meeting in here. "
+                   "They did'n like each other.")
         return offset, key
 
     def collect_register(self):
@@ -492,8 +492,8 @@ class RkDepotWork(RkCommon):
                     self.version.update(val)
                     self.count['fid_found'] += 1
 
-            # NOTE:If no version is found the dict is empty; searching with a key
-            # slice for 'rpaid' excepts a KeyError (better init dict with key?)
+            # NOTE:If no version is found the dict is empty; searching with a key slice
+            # for 'rpaid' excepts a KeyError (better init dict with key?)
             if 'rpa1' in self.version.values() and self.depot.suffix != '.rpi':
                 self.version.clear()
             elif not self.version:
@@ -533,7 +533,7 @@ class RkDepotWork(RkCommon):
         return tmp_pt
 
     def unpack_depot(self):
-        """Manages the unpacking of the depot files."""
+        """Manages the unpacking/simulation of the found depot files."""
         for file_num, (file_pt, pos_stats) in enumerate(self.reg.items()):
             try:
                 tmp_path = self.check_out_pt(file_pt)
@@ -555,7 +555,8 @@ class RkDepotWork(RkCommon):
 
     def list_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
-        # outp_dst = sys.stdout if "bla" else fl
+        # IDEA: list to target of user choice
+        # outp_dst = sys.stdout if "bla" else file
         self.inf(2, "Listing archive files:")
         print(f"Depot {RkCommon.count['dep_done'] + 1}: {self.depot.name}")
         for num, (fln, flidx) in enumerate(sorted(self.reg.items())):
