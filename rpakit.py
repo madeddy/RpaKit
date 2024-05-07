@@ -154,28 +154,20 @@ class RkPathWork(RkCommon):
         self.raw_inp = None
         self.task = None
 
-    def dispose(self):
-        """
-        Moves the extracted content to output and removes temporary dir struct. In simulate
-        mode everything is thrown away.
-        """
-
-        if self.task == 'extract':
-            # FIXME: move does error if src exists in dst; how?
-            for entry in self.rk_tmp_dir.iterdir():
-                # shutil.move(str(entry), self.out_pt)
-                shutil.move(entry, self.out_pt)
-
-            # TODO: write code to check output
-            if self.void_dir(self.out_pt):
-                self.out_pt.rmdir()
-        else:
+    def _dispose(self):
+        """Removes temporary content and the outdir if empty."""
+        if self.void_dir(self.out_pt):
             self.out_pt.rmdir()
 
         if self.void_dir(self.rk_tmp_dir):
             self.rk_tmp_dir.rmdir()
         else:
             shutil.rmtree(self.rk_tmp_dir)
+
+    def mv_tmp2outdir(self):
+        """Moves temporary content to output."""
+        for entry in self.rk_tmp_dir.iterdir():
+            shutil.move(entry, self.out_pt)
 
     def exit_app(self):
         self.inf(0, "Exiting RpaKit.")
@@ -190,7 +182,7 @@ class RkPathWork(RkCommon):
         if self.out_pt.exists() and not self.void_dir(self.out_pt):
             self.inf(0, f"The output directory > {self.out_pt} exists already and "
                      "is not empty. Rename or remove it.", m_sort='cau')
-            self.dispose()
+            self._dispose()
             self.exit_app()
         self.make_dirstruct(self.out_pt)
 
@@ -675,10 +667,10 @@ class RkMain(RkPathWork, RkDepotWork):
             self.inf(1, f"{report}")
             self.clear_rk_vars()
 
-        # FIXME: Subpar behavior. Call dispose for std task of moving unpacked
-        # content in place. Should be normal func first. e.g.
         if self.task in ['extract', 'simulate']:
-            self.dispose()
+            if self.task == 'extract':
+                self.mv_tmp2outdir()
+            self._dispose()
         self.done_msg()
 
 
