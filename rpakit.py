@@ -675,66 +675,74 @@ class RkMain(RkPathWork, RkDepotWork):
 def parse_args():
     """Argument parser to provide functionality for the command-line interface."""
 
-    desc = """Program for searching and unpacking RPA files. EXAMPLE USAGE:
-    rpakit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
-    rpakit.py -t /home/{USERNAME}/otherdir/file.rpa
-    rpakit.py --extract c:/Users/{USERNAME}/my_folder/A123.rpa"""
+    desc = "Program for searching and unpacking RPA files."
     epi = "Default output dir is set to `{Target}/rpakit_out/`. Change with option -o."
     ap = argparse.ArgumentParser(
         description=desc,
         epilog=epi,
-        formatter_class=argparse.RawTextHelpFormatter)
+        formatter_class=lambda prog: argparse.HelpFormatter(
+            prog, max_help_position=30, width=100))
+
     ap.add_argument(
         'inpath',
         metavar='Target',
         action='store',
         type=str,
         help='Directory path (to search) OR rpa file path to unpack.')
-    opts = ap.add_mutually_exclusive_group(required=True)
-    opts.add_argument(
+
+    opts = ap.add_argument_group("Tasks")
+    tasks = opts.add_mutually_exclusive_group(required=True)
+    tasks.add_argument(
         '-e',
         '--extract',
         dest='task',
         action='store_const',
         const='extract',
         help='Extracts all stored files and dirs.')
-    opts.add_argument(
+
+    tasks.add_argument(
         '-l',
         '--list',
         dest='task',
         action='store_const',
         const='listing',
         help='Prints a listing of all stored files.')
-    opts.add_argument(
+
+    tasks.add_argument(
         '-t',
         '--test',
         dest='task',
         action='store_const',
         const='test',
         help='Tests if archive(s) are a known format.')
-    opts.add_argument(
+
+    tasks.add_argument(
         '-s',
         '--simulate',
         dest='task',
         action='store_const',
         const='simulate',
         help='Unpacks all stored files just temporary.')
+
     ap.add_argument(
         "-o",
         "--outdir",
         action='store',
         type=str,
         help="Extracts to the given path instead to the default destination.")
+
     ap.add_argument(
         '--verbose',
         metavar='level [0-2]',
         type=int,
         choices=range(0, 3),
         help='Amount of info output. 0:none, 2:much, default:1')
+
     ap.add_argument(
         '--version',
         action='version',
         version=f"{ __title__} {__version__}")
+
     args = ap.parse_args()
     return args
 
