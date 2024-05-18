@@ -22,36 +22,29 @@
 # RPA Kit
 RPA Kit is a application for decompressing Ren'Py archives.
 
-It takes as input a archive file or a directory, which is then searched for legit archives,
-and unpacks the content of them in a directory of choice. Its also possible to read-only
-listing of the content or testing if the given archives format type supported is.
+It needs as input a target archive-file or a directory wich contains such archives. These
+will if possible identified and the content of them unpacked in a directory of choice. It is
+also possible to output a read-only listing of the content or to test, if the format-type of
+the given archives supported is.
 
 ## Usage
 ### Command line parameter overview
-```
-usage: rpakit.py [-h] (-e | -l | -t | -s) [-o OUTDIR] [--verbose level [0-2]] [--version] Target
+**~$** rpakit.py [-e|-l|-t|-s] [-o OUTPUT] [--verbose] [-version] [-h, --help] target
 
-Program for searching and unpacking RPA files.
+- *Positional options(required):*
+  + `target`                Directory path to search OR path of a RPA file to work on.
 
-positional arguments:
-Target                Directory path (to search) OR rpa file path to unpack.
+- *Tasks(one required):*
+  + `-e`, `--expand`        Unpacks all stored files.
+  + `-l`, `--list`          Gives a listing of all stored files.
+  + `-t`, `--test`          Tests if archive(s) are a known format.
+  + `-s`, `--simulate`      Simulates the expand process.
 
-options:
--h, --help            show this help message and exit
--o OUTDIR, --outdir OUTDIR
-Extracts to the given path instead to the default destination.
---verbose level [0-2]
-Amount of info output. 0:none, 2:much, default:1
---version             show program's version number and exit
-
-Tasks:
--e, --extract         Extracts all stored files and dirs.
--l, --list            Prints a listing of all stored files.
--t, --test            Tests if archive(s) are a known format.
--s, --simulate        Unpacks all stored files just temporary.
-
-Default output dir is set to `{Target}/rpakit_out/`. Change with option -o.
-```
+- *Optional:*
+  + `-o`, `--outdir OUTPUT`  Extracts to the given path instead of standard.
+  + `--verbose`              Amount of info output. 0:none, 2:much, default:1
+  + `--version`              Shows version information
+  + `-h`, `--help `          Print this help
 
 ### Example CLI usage
 - rpakit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
@@ -62,20 +55,20 @@ Default output dir is set to `{Target}/rpakit_out/`. Change with option -o.
 Will extract every file from archive into the default output directory, making
 subdirectories when necessary.
 
-`rpa_kit.py -e -o unpacked /home/{USERNAME}/somedir/search_here`
+`rpa_kit.py /home/{USERNAME}/somedir/search_here/ -e -o unpacked`
 Searches RenPy archives in this directory and uncompresses them in the subdir
 'unpacked'.
 
 `rpa_kit.py -t c:/Users/{username}/my_folder/A123.rpa`
 This will test the given archive for his format and if valide prints it out.
 
-`rpa_kit.py -l -verbose 2 c:/Users/{username}/game_dir/blub8/`
+`rpa_kit.py -l c:/Users/{username}/game_dir/foo/ --verbose 2`
 Searches for RenPy archives in this directory and lists their file content in the
 console. The verboseness was also set to highest level (tell everything).
 
 
 ### API
->The API is possible not final!
+> The API is possible not final!
 
 To provide the functionality of _**Rpa Kit**_ in other projects, the programs classes can be
 included. Besides the code for CLI use, the core functionality is organized in four classes in
@@ -121,7 +114,7 @@ Simple base class to provide some shared methods and variables for the other cla
 
 
 ### Motivation - _Why this project?_
-This began in 2017 as another learning experience in Python and and to understand some more
+This started 2017 as another learning experience in Python and and to understand a bit more
 about RenPy internals. So i needed a project for this.
 
 Some of the goals where:
@@ -130,15 +123,14 @@ Some of the goals where:
 - Support for more rpa formats
 - Additional info output
 
-In the future there will possibly other changes or extensions. If time allows and motivation at
-the same time on a high is, we copuld see:
+In the future there will possibly other changes if time allows it and motivation at the same
+time on a high is. Possible changes could be:
 - Info output with classic logging
 - Format specs and some mechanics move to dedicated classes per type
 
 
 ## Legal
 ### License
-
 __RPA Kit__ is licensed under Apache-2.0. See the [LICENSE](LICENSE) file for more details.
 
 ### Disclaimer
