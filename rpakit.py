@@ -110,10 +110,11 @@ class RkCommon:
     count = {'dep_found': 0, 'dep_done': 0, 'files_total': 0, 'dep_id_found': 0}
 
     @classmethod
-    def telltale(cls, fraction, total, obj):
-        """Returns a percentage-meter like output for use in tty."""
-        return f"[{cls.bg_blue}{fraction / float(total):05.1%}{cls.reset}] {obj!s:>4}"
-
+    def pm(cls, fraction, total, object, bg_color=None):
+        """Returns a fraction-meter like output for use in tty."""
+        color = bg_color or cls.bg_blue
+        return (f"[{color}{fraction:{len(str(total))}>n}/{total:>n}{cls.reset}] "
+                f"{object!s:>4}")
 
     # TODO: Use logging instead
     @classmethod
@@ -588,7 +589,8 @@ class RkDepotWork(RkCommon):
                 self.make_dirstruct(tmp_path.parent)
 
                 tmp_file_data = self.extract_data(file_pt, pos_stats)
-                self.inf(2, f"{self.telltale(file_num, RkCommon.count['files_total'], file_pt)}")
+                report = self.pm(file_num, RkCommon.count['files_total'], file_pt, self.bg_yellow)
+                self.inf(2, f"{report}")
 
                 with tmp_path.open('wb') as of:
                     of.write(tmp_file_data)
