@@ -7,8 +7,11 @@ writing or testing & identifying the archiv or simulating the extract process is
 also possible.
 """
 
-# TODO: Add overwrite for output
-# TODO: Add functionality to force rpa format version from user input
+# TODO: Overall tasks:
+# 1. Test new overwrite option for output
+# 2. Add functionality to force rpa format version from user input
+# 3. Refactor to use py logging
+# 4. use atexit
 
 __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
@@ -116,7 +119,7 @@ class RkCommon:
         return (f"[{color}{fraction:{len(str(total))}>n}/{total:>n}{cls.reset}] "
                 f"{object!s:>4}")
 
-    # TODO: Use logging instead
+    # TODO: Use py logging instead
     @classmethod
     def inf(cls, inf_level, msg, m_sort=None):
         """Outputs accordingly the current verbosity level allowed infos."""
@@ -252,7 +255,6 @@ class RkPathWork(RkCommon):
             for item in inpath.iterdir():
                 yield from self.traverse(item)
 
-
     def filter_raw_input(self):
         """Checks input and casts output to pathlike state."""
 
@@ -266,6 +268,8 @@ class RkPathWork(RkCommon):
         """This prepairs the given path and output dir. It dicovers if the input
         is a file or directory and takes the according actions.
         """
+        # FIXME: By mistake a restricted path was given and caused a PermissionError in
+        # make_output. Needs to be handled or checked beforehand
 
         for globitem in self.filter_raw_input():
             for elem in self.traverse(globitem):
@@ -290,8 +294,9 @@ class RkDepotWork(RkCommon):
     "depot", "task", "rk_tmp_dir" and "out_pt".
 
     """
-    # IDEA: Alternate for rpaversion dicts
+    # IDEA: Alternate for rpaversion dicts; example:
     # rpaformats are simple functions of (archive) -> archivetype
+
     # rpaformats = []
     # def rpaformat(fnc):
     #     rpaformats.append(fnc)
@@ -308,7 +313,6 @@ class RkDepotWork(RkCommon):
     #         data = extry(inp)
     #     except ValueError:
     #         pass
-
 
     rpaformats = {
         'x': {
@@ -484,6 +488,8 @@ class RkDepotWork(RkCommon):
 
     def collect_register(self):
         """Gets the depot's register through unzip and unpickle."""
+
+        # FIXME: make offset and key vars class wide; move this line somewhere else?
         offset, key = self.get_cipher()
         with self.depot.open('rb') as of:
             of.seek(offset)
