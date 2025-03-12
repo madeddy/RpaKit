@@ -156,12 +156,22 @@ class RkPathWork(RkCommon):
     in a list. A archiv file as input skips the search part.
     """
 
-    def __init__(self):
+    outdir = 'rpakit_out'
+    overwrite = False
+
+    def __init__(self, raw_inp, task, outdir=None, overwrite=None):
         super().__init__()
-        self.raw_inp = None
+        self.raw_inp = raw_inp
+        self.task = task
+        if outdir:
+            self.outdir = Path(outdir)
+        if overwrite:
+            self.overwrite = overwrite
+
+        self.rk_tmp_dir = None
         self.inp_pt = None
+        # self.inp_pt = self.raw_inp.parent if self.raw_inp.is_file() else self.raw_inp
         self.dep_lst = []
-        self.task = None
 
     def _dispose(self):
         """Removes temporary directory/-tree and the outdir if empty."""
@@ -191,9 +201,13 @@ class RkPathWork(RkCommon):
         exits.
         """
         self.out_pt = self.inp_pt / self.outdir
-        if self.out_pt.exists() and not self.void_dir(self.out_pt):
-            self.inf(0, f"The output directory > {self.out_pt} exists already and "
-                     "is not empty. Rename or remove it.", m_sort='cau')
+
+        # if self.out_pt.exists() and not self.void_dir(self.out_pt):
+        if not self.overwrite and self.out_pt.exists() and not self.void_dir(self.out_pt):
+            self.inf(0, f"> {self.out_pt} is the intended output directory which exists already "
+                     "and is not empty.\n"
+                     "Rename/remove it or use option --overwrite.",  m_sort='cau')
+
             self._dispose()
             self.exit_app()
         self.make_dirstruct(self.out_pt)
@@ -215,7 +229,8 @@ class RkPathWork(RkCommon):
                 twin = str(entry.with_suffix('.rpa'))
                 if twin in self.dep_lst:
                     self.dep_lst.remove(twin)
-                    RkCommon.count['dep_found'] -= 1
+                    # NOTE: Now counted in main
+                    # RkCommon.count['dep_found'] -= 1
 
     def traverse(self, inpath):
         """
@@ -246,10 +261,10 @@ class RkPathWork(RkCommon):
         for globitem in self.filter_raw_input():
             for elem in self.traverse(globitem):
                 self.dep_lst.append(elem)
-                RkCommon.count['dep_found'] += 1
+                # RkCommon.count['dep_found'] += 1
 
-            if not self.inp_pt:
-                self.inp_pt = self.raw_inp.parent if self.raw_inp.is_file() else self.raw_inp
+            # TODO: Check if this needs to be here or maybe in init or ...?
+            self.inp_pt = self.raw_inp.parent if self.raw_inp.is_file() else self.raw_inp
 
         self.ident_paired_depot()
 
@@ -257,11 +272,7 @@ class RkPathWork(RkCommon):
             self.rk_tmp_dir = Path(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
             self.make_output()
 
-        if RkCommon.count['dep_found'] > 0:
-            self.inf(1, f"{RkCommon.count['dep_found']} RPA files to process:\n"
-                     f"{chr(10).join([*map(str, self.dep_lst)])}", m_sort='raw')
-        else:
-            self.inf(1, "No RPA files found. Was the correct path given?")
+        return self.dep_lst, self.rk_tmp_dir, self.out_pt
 
 
 class RkDepotWork(RkCommon):
@@ -371,23 +382,32 @@ class RkDepotWork(RkCommon):
         }
     }
 
-    def __init__(self):
+    def __init__(self, task, depot, rk_tmp_dir):
         super().__init__()
-        self.depot = None
+        self.task = task
+        self.depot = depot
+        self.rk_tmp_dir = rk_tmp_dir
+
         self.header = None
         self.version = {}
         self.reg = {}
         self.dep_initstate = None
+        RkCommon.count['dep_id_found'] = 0  # IDEA: store instead of this id stings?
+        # RkCommon.count['dep_id_found'].clear()
+        # self.dep_id_found = []
 
-    def clear_rk_vars(self):
-        """This clears some vars. In rare cases nothing is assigned and old values
-        from previous depot run are caried over. Weird files will slip in and error.
-        """
-        self.header = None
-        self.version.clear()
-        self.reg.clear()
-        self.dep_initstate = None
-        self.count['fid_found'] = 0
+        self.init_depot()
+
+    # FIXME: This method should be moot if instancing correctly works
+    # def clear_rk_vars(self):
+    #     """This clears some vars. In rare cases nothing is assigned and old values
+    #     from previous depot run are caried over. Weird files will slip in and error.
+    #     """
+    #     self.header = None
+    #     self.version.clear()
+    #     self.reg.clear()
+    #     self.dep_initstate = None
+    #     RkCommon.count['dep_id_found'] = 0
 
     def extract_data(self, file_pt, pos_stats):
         """Extracts the archive data to a temporary file."""
@@ -590,6 +610,18 @@ class RkDepotWork(RkCommon):
         self.inf(0, f"For archive > {self.depot.name} the identified version "
                  f"variant is: {self.bg_blue}{self.version['desc']!r}{self.reset}")
 
+    def work_depot(self):
+        """Manages the different tasks for the given archives and their content."""
+        if self.task in ['extract', 'simulate']:
+            self.unpack_depot()
+        elif self.task == 'list':
+            self.list_depot_content()
+        elif self.task == 'test':
+            self.test_depot()
+        else:
+            raise ValueError(f"Unknown task request: {self.task!r}; Choose either: extract, list, "
+                             "simulate, test")
+
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
         try:
@@ -613,83 +645,6 @@ class RkDepotWork(RkCommon):
         except OSError as err:
             raise RpaKitError(f"{err}: Error while opening archive file "
                               f">{self.depot}< for initialization.")
-
-
-class RkMain(RkPathWork, RkDepotWork):
-    """
-    Main class to process args and executing the related methods. Parameter:
-    Positional:
-        {inp} takes `path` or `path/filename.suffix`
-    Keyword:
-        {task=['extract'|'listing'|'test'|'simulate']} the intendet request for the app run
-        {outdir=NEWDIR} changes output directory for the archiv content
-        {verbose=[0|1|2]} information output level; defaults to 1
-    """
-
-    def __init__(self, inpath, task, outdir=None, verbose=None):
-        if verbose:
-            RkCommon.verbosity = verbose
-        if outdir:
-            RkCommon.outdir = Path(outdir)
-        super().__init__()
-        self.raw_inp = Path(inpath)
-        self.task = task
-
-    def done_msg(self):
-        """Outputs a info when all is done."""
-        if self.task in ['extract', 'simulate']:
-            if RkCommon.count["dep_done"] > 0:
-                if self.task == 'extract':
-                    self.inf(0, f" Done. We unpacked {RkCommon.count['dep_done']} "
-                             "archive(s).")
-                else:
-                    self.inf(0, "We successful simulated the unpacking of"
-                             f" {RkCommon.count['dep_done']} archive(s).")
-            else:
-                self.inf(0, "Oops! No archives where processed...")
-        elif self.task in ['listing', 'test']:
-            self.inf(0, "Completed!")
-
-    def begin_msg(self):
-        """Outputs a info  about the start state if verbosity is high."""
-        if self.raw_inp.is_file():
-            self.inf(2, f"Input is a file. Processing {self.raw_inp}.")
-        elif self.raw_inp.is_dir():
-            self.inf(2, f"Input is a directory. Searching for RPA in {self.raw_inp} "
-                     "and below.")
-
-    def rk_control(self):
-        """Processes input, yields depot's to the functions."""
-        self.begin_msg()
-        self.pathworker()
-        self.inf(1, f"{RkCommon.name} found {RkCommon.count['dep_found']} "
-                 "potential archives.")
-
-        while self.dep_lst:
-            self.depot = self.dep_lst.pop()
-
-            self.init_depot()
-            if self.dep_initstate is False:
-                continue
-
-            if self.task in ['extract', 'simulate']:
-                self.unpack_depot()
-            elif self.task == 'listing':
-                self.list_depot_content()
-            elif self.task == 'test':
-                self.test_depot()
-
-            RkCommon.count['dep_done'] += 1
-            report = self.telltale(RkCommon.count['dep_done'],  RkCommon.count['dep_found'],
-                                   self.depot)
-            self.inf(1, f"{report}")
-            self.clear_rk_vars()
-
-        if self.task in ['extract', 'simulate']:
-            if self.task == 'extract':
-                self.mv_tmp2outdir()
-            self._dispose()
-        self.done_msg()
 
 
 def parse_args():
@@ -744,11 +699,16 @@ def parse_args():
         help='Unpacks all stored files just temporary.')
 
     ap.add_argument(
-        "-o",
-        "--outdir",
+        '-o',
+        '--outdir',
         action='store',
         type=str,
-        help="Extracts to the given path instead to the default destination.")
+        help='Extracts to the given path instead to the default destination.')
+
+    ap.add_argument(
+        '--overwrite',
+        action='store_true',
+        help='Overwrites outdir and any content if they already exist.')
 
     ap.add_argument(
         '--verbose',
@@ -775,8 +735,67 @@ def main():
         raise RuntimeError("Must be executed in Python 3.9 or later.\n"
                            f"You are running {sys.version}")
     cfg = parse_args()
-    rkm = RkMain(cfg.inpath, cfg.task, outdir=cfg.outdir, verbose=cfg.verbose)
-    rkm.rk_control()
+    if cfg.verbose:
+        RkCommon.verbosity = cfg.verbose
+    pathlike_inp = Path(cfg.inpath)
+
+    # begin msg
+    if pathlike_inp.is_file():
+        RkCommon.inf(2, f"Input is a file. Processing {cfg.inpath}.")
+    elif pathlike_inp.is_dir():
+        RkCommon.inf(2, f"Input is a directory. Searching for RPA in {cfg.inpath} "
+                     "and below.")
+    else:
+        RkCommon.inf(0, f"Could not identify input: {cfg.inpath} "
+                     "Check and retry.")
+
+    rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite)
+    dep_lst, rk_tmp_dir, out_pt = rkp.pathworker()
+    # FIXME: Should this be here? @end of pathworker
+    RkCommon.count['dep_found'] = len(dep_lst)
+
+    if RkCommon.count['dep_found'] > 0:
+        RkCommon.inf(
+            1, f"Found {RkCommon.count['dep_found']} RPA files to process:\n", m_sort='raw')
+        RkCommon.inf(2, f"{chr(10).join([*map(str, dep_lst)])}", m_sort='raw')
+    else:
+        RkCommon.inf(0, "No RPA files found. Was the correct path given?")
+
+    while dep_lst:
+        depot = dep_lst.pop()
+
+        rkd = RkDepotWork(cfg.task, depot, rk_tmp_dir)
+
+        # if something wrong with initializing dep
+        if rkd.dep_initstate is False:
+            continue
+        # TODO: Tell about this
+
+        rkd.work_depot()
+        RkCommon.count['dep_done'] += 1
+
+        report = rkd.pm(RkCommon.count['dep_done'], RkCommon.count['dep_found'], depot)
+        rkd.inf(1, f"{report}")
+
+    if cfg.task in ['extract', 'simulate']:
+        if cfg.task == 'extract':
+            # FIXME: These both have perhaps no buissiness here. @class somewhere
+            rkp.mv_tmp2outdir()
+        rkp._dispose()
+
+        # done msg
+        if RkCommon.count["dep_done"] > 0:
+            if cfg.task == 'extract':
+                rkd.inf(0, f" Completed. We unpacked {RkCommon.count['dep_done']} archive(s).")
+            else:
+                rkd.inf(
+                    0, f"We simulated the unpacking of {RkCommon.count['dep_done']} "
+                    "archive(s).")
+        else:
+            RkCommon.inf(0, "Oops! No archives where processed...")
+
+    elif cfg.task in ['listing', 'test']:
+        RkCommon.inf(0, "Task completed.")
 
 if __name__ == '__main__':
     main()
