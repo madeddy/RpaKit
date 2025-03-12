@@ -179,15 +179,23 @@ class RkPathWork(RkCommon):
         if self.void_dir(self.out_pt):
             self.out_pt.rmdir()
 
+        #  warning if for some reason nothing was unpacked
         if self.void_dir(self.rk_tmp_dir):
-            self.rk_tmp_dir.rmdir()
-        else:
-            shutil.rmtree(self.rk_tmp_dir)
+            self.inf(1, "The temp directory was unexpectely empty.", m_sort='warn')
+        #     self.rk_tmp_dir.rmdir()
+        # else:
+        #     shutil.rmtree(self.rk_tmp_dir)
+
+        shutil.rmtree(self.rk_tmp_dir)
 
     def mv_tmp2outdir(self):
-        """Moves temporary content to output."""
-        for entry in self.rk_tmp_dir.iterdir():
-            shutil.move(entry, self.out_pt)
+        """Copys all unpacked content from temporary dir to the output dir."""
+        # FIXME: errors if a src dir exists in dst which happens with --overwrite option
+        # for entry in self.rk_tmp_dir.iterdir():
+        #     shutil.move(entry, self.out_pt)
+
+        # move() errors on existing obj so the manual way with copy-/removetree is used
+        shutil.copytree(self.rk_tmp_dir, self.out_pt, dirs_exist_ok=True)
 
     def exit_app(self):
         self.inf(0, "Exiting RpaKit.")
