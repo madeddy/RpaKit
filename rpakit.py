@@ -16,9 +16,12 @@ __author__ = 'madeddy'
 __status__ = 'Development'
 __version__ = '0.47.0-alpha'
 
-
 import argparse
+
+# import atexit  # for later use
 import glob
+
+# import logging  # for later use
 import pickle
 import shutil
 import sys
@@ -37,8 +40,10 @@ if sys.platform.startswith('win32'):
         tty_colors = False
 
 
+# NOTE: They use colors from RkCommon with self. Does this even work?
 class RpaKitError(Exception):
     """Base class for exceptions in RpaKit."""
+
     def __init__(self, msg):
         self.msg = msg
 
@@ -58,8 +63,8 @@ class AmbiguousHeaderError(RpaKitError):
         self.dep = dep
         self.ver = [v for k, v in ver.items() if 'rpaid' in k]
         super().__init__(
-            "Detection of the archive format failed because multiple matches where "
-            f"found.\nArchive: {self.dep} with Version > {self.ver}")
+            "Detection of the archive format failed because multiple matches where found.\n"
+            f"Archive: {self.dep} with Version > {self.ver}")
 
 
 class NoRpaOrUnknownWarning(RpaKitError):
@@ -74,14 +79,14 @@ class NoRpaOrUnknownWarning(RpaKitError):
         self.dep = dep
         self.head = head
         super().__init__(
-            "Header not recognizable. Tested archive is not a RPA or a unknown "
-            f"custom type.\nArchive: {self.dep} with header: > {self._header}")
+            "Header not recognizable. The tested archive is not a RPA or a custom type.\n"
+            f"Archive: {self.dep} with header: > {self._header}")
 
 
 class RkCommon:
     """
-    "Rpa Kit Common" provides some shared methods and variables for the other
-    classes.
+    "Rpa Kit Common" acts as superclass for the classes RkPathWork and RkDepotWork and provides
+    some shared methods and variables.
     """
     name = __title__
     # tty color code shorthands
@@ -127,7 +132,7 @@ class RkCommon:
                 print(ind1, msg)
                 return
 
-            print(textwrap.fill(msg, width=90, initial_indent=ind1, subsequent_indent=ind2))
+            print(textwrap.fill(msg, width=100, initial_indent=ind1, subsequent_indent=ind2))
 
     @classmethod
     def void_dir(cls, dst):
@@ -144,11 +149,11 @@ class RkCommon:
 
 class RkPathWork(RkCommon):
     """
-    Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path)
-    are internaly providet.
-    If input is a dir it searches there for archives, checks and filters them and
-    stores them in a list.
-    A archiv as input skips the search part.
+    This is a support class for RPA Kit's path related tasks. Positional inputs are a ´file
+    or directory paths` and ´task`. Optional inputs are "outdir" and "overwrite" and have
+    default values.
+    If input is a dir it searches there for archives, checks and filters them and stores them
+    in a list. A archiv file as input skips the search part.
     """
 
     def __init__(self):
@@ -159,7 +164,8 @@ class RkPathWork(RkCommon):
         self.task = None
 
     def _dispose(self):
-        """Removes temporary content and the outdir if empty."""
+        """Removes temporary directory/-tree and the outdir if empty."""
+        # a empty output can be removed
         if self.void_dir(self.out_pt):
             self.out_pt.rmdir()
 
@@ -180,8 +186,10 @@ class RkPathWork(RkCommon):
         sys.exit(0)
 
     def make_output(self):
-        """Constructs outdir and outpath."""
-
+        """
+        Constructs outdir if it not already exists and with content is. Errors otherwise and
+        exits.
+        """
         self.out_pt = self.inp_pt / self.outdir
         if self.out_pt.exists() and not self.void_dir(self.out_pt):
             self.inf(0, f"The output directory > {self.out_pt} exists already and "
@@ -192,7 +200,7 @@ class RkPathWork(RkCommon):
 
     def ident_paired_depot(self):
         """
-        Identifies the rpa 1 type paired archive, which consisting of a rpa and rpi suffixed
+        Identifies the RPA-1 type paired archive, which consisting of a rpa and rpi suffixed
         files with the same name.
         rpi: Have the index position data for the rpa stored
         rpa: Have the the file data stored
@@ -258,8 +266,9 @@ class RkPathWork(RkCommon):
 
 class RkDepotWork(RkCommon):
     """
-    The class for analyzing, testing and unpacking RPA files. All needet
-    inputs (depot, output path) are internaly providet.
+    The depot class for analyzing, testing and unpacking RPA files. Positional inputs are
+    "depot", "task", "rk_tmp_dir" and "out_pt".
+
     """
     # IDEA: Alternate for rpaversion dicts
     # rpaformats are simple functions of (archive) -> archivetype
@@ -381,7 +390,7 @@ class RkDepotWork(RkCommon):
         self.count['fid_found'] = 0
 
     def extract_data(self, file_pt, pos_stats):
-        """Extracts the archive data to a temp file."""
+        """Extracts the archive data to a temporary file."""
         if self.depot.suffix == '.rpi':
             self.depot = self.depot.with_suffix('.rpa')
 
@@ -406,7 +415,12 @@ class RkDepotWork(RkCommon):
                             for offset, leg, prefix in self.reg[kv]]
 
     def unify_reg(self):
-        """Arrange the register in common form."""
+        """
+        Arranges the register data in common form so its easier to work with.
+        There are two possible types in Ren'Py: Two value length for older and three for more
+        recent engine versions. This method changes the two length variant to a length of three
+        by adding a bytes prefix.
+        """
         for val in self.reg.values():
             if len(val[0]) == 2:
                 for num, _ in enumerate(val):
@@ -414,6 +428,7 @@ class RkDepotWork(RkCommon):
 
     def get_cipher(self):
         """Fetches the cipher for the register from the header infos."""
+
         # NOTE: Slicing is error prone; perhaps use of "split parts" as a fallback
         # in the excepts is useful or even reverse the order of both
         offset, key = 0, None
@@ -483,8 +498,9 @@ class RkDepotWork(RkCommon):
         return magic
 
     def guess_version(self):
-        """Determines probable archive version from header/suffix and pairs alias
-        variants with a main format ID.
+        """
+        Determines probable archive version from header/suffix and pairs fitting alias
+        variants with a main format-ID.
         """
         magic = self.get_header_start()
         try:
@@ -684,8 +700,7 @@ def parse_args():
     ap = argparse.ArgumentParser(
         description=desc,
         epilog=epi,
-        formatter_class=lambda prog: argparse.HelpFormatter(
-            prog, max_help_position=30, width=100))
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30, width=100))
 
     ap.add_argument(
         'inpath',
@@ -745,7 +760,7 @@ def parse_args():
     ap.add_argument(
         '--version',
         action='version',
-        version=f"{ __title__} {__version__}")
+        version=f"{__title__} {__version__}")
 
     args = ap.parse_args()
     return args
