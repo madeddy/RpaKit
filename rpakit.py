@@ -7,13 +7,14 @@ writing or testing & identifying the archiv or simulating the extract process is
 also possible.
 """
 
+# TODO: Add overwrite for output
 # TODO: Add functionality to force rpa format version from user input
 
 __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.46.0-alpha'
+__version__ = '0.47.0-alpha'
 
 
 import argparse
@@ -42,7 +43,7 @@ class RpaKitError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return f"{self.red}{repr(self.msg)}{self.std}"
+        return f"{self.red}{repr(self.msg)}{self.reset}"
 
 
 class AmbiguousHeaderError(RpaKitError):
@@ -83,49 +84,50 @@ class RkCommon:
     classes.
     """
     name = __title__
-    verbosity = 1
-    outdir = 'rpakit_out'
-    count = {'dep_found': 0, 'dep_done': 0, 'fle_total': 0, 'fid_found': 0}
-    rk_tmp_dir = None
-    out_pt = None
     # tty color code shorthands
-    if tty_colors:
-        std = '\x1b[0m'
-        ul = '\x1b[03m'
-        red = '\x1b[31m'
-        gre = '\x1b[32m'
-        ora = '\x1b[33m'
-        blu = '\x1b[34m'
-        ylw = '\x1b[93m'
-        bg_blu = '\x1b[44;30m'
-        bg_red = '\x1b[45;30m'
-    else:
-        std = ul = red = gre = ora = blu = ylw = bg_blu = bg_red = ''
+    reset = '\x1b[0m'
+    uline = '\x1b[03m'
+    red = '\x1b[31m'
+    green = '\x1b[32m'
+    yellow = '\x1b[33m'  # looks orange on ubuntu
+    blue = '\x1b[34m'
+    magenta = '\x1b[35m'
+    cyan = '\x1b[36m'
+    bg_red = '\x1b[41;30m'
+    bg_green = '\x1b[42;30m'
+    bg_yellow = '\x1b[43;30m'
+    bg_blue = '\x1b[44;37m'
+    bg_lightblue = '\x1b[46;30m'
+    if not tty_colors:
+        reset = uline = red = green = yellow = blue = magenta = cyan = ''
+        bg_red = bg_green = bg_yellow = bg_blue = bg_lightblue = ''
+    verbosity = 1
+    count = {'dep_found': 0, 'dep_done': 0, 'files_total': 0, 'dep_id_found': 0}
 
     @classmethod
     def telltale(cls, fraction, total, obj):
         """Returns a percentage-meter like output for use in tty."""
-        return f"[{cls.bg_blu}{fraction / float(total):05.1%}{cls.std}] {obj!s:>4}"
+        return f"[{cls.bg_blue}{fraction / float(total):05.1%}{cls.reset}] {obj!s:>4}"
+
 
     # TODO: Use logging instead
     @classmethod
     def inf(cls, inf_level, msg, m_sort=None):
-        """Outputs by the current verboseness level allowed infos."""
+        """Outputs accordingly the current verbosity level allowed infos."""
         if cls.verbosity >= inf_level:  # TODO: use self.tty ?
-            ind1 = f"{cls.name}:{cls.gre} >> {cls.std}"
+            ind1 = f"{cls.name}:{cls.green} >> {cls.reset}"
             ind2 = " " * 12
             if m_sort == 'warn':
-                ind1 = f"{cls.name}:{cls.ylw} WARNING {cls.std}> "
+                ind1 = f"{cls.name}:{cls.yellow} WARNING {cls.reset}> "
                 ind2 = " " * 16
             elif m_sort == 'cau':
-                ind1 = f"{cls.name}:{cls.red} CAUTION {cls.std}> "
+                ind1 = f"{cls.name}:{cls.red} CAUTION {cls.reset}> "
                 ind2 = " " * 20
             elif m_sort == 'raw':
                 print(ind1, msg)
                 return
 
-            print(textwrap.fill(msg, width=90, initial_indent=ind1,
-                  subsequent_indent=ind2))
+            print(textwrap.fill(msg, width=90, initial_indent=ind1, subsequent_indent=ind2))
 
     @classmethod
     def void_dir(cls, dst):
@@ -174,7 +176,7 @@ class RkPathWork(RkCommon):
     def exit_app(self):
         self.inf(0, "Exiting RpaKit.")
         for i in range(3, -1, -1):
-            print(f"{RkCommon.bg_red}{i}%{RkCommon.std}", end='\r')
+            print(f"{self.bg_red}{i}%{self.reset}", end='\r')
         sys.exit(0)
 
     def make_output(self):
@@ -475,8 +477,7 @@ class RkDepotWork(RkCommon):
             # alternate: Coding should be cp1252 and zlib compression default (\x9c)
             if len(self.header) not in (34, 36) and self.header.startswith(b"\x78\x9c"):
                 magic = self.header[:2].decode('cp1252')
-                self.inf(1, "UnicodeDecodeError: Found possibly old RPA-1 format.",
-                         m_sort='warn')
+                self.inf(1, "UnicodeDecodeError: Found possibly old RPA-1 format.", m_sort='warn')
             else:
                 magic = str()
         return magic
@@ -490,7 +491,9 @@ class RkDepotWork(RkCommon):
             for key, val in self.rpaformats.items():
                 if key in magic:
                     self.version.update(val)
-                    self.count['fid_found'] += 1
+                    RkCommon.count['dep_id_found'] += 1
+                    # RkCommon.count['dep_id_found'].append(val)
+                    # self.dep_id_found.append(val)
 
             # NOTE:If no version is found the dict is empty; searching with a key slice
             # for 'rpaid' excepts a KeyError (better init dict with key?)
@@ -498,7 +501,8 @@ class RkDepotWork(RkCommon):
                 self.version.clear()
             elif not self.version:
                 raise NoRpaOrUnknownWarning(self.depot, self.header)
-            elif self.count['fid_found'] > 1:
+            # elif len(self.dep_id_found) > 1:
+            elif RkCommon.count['dep_id_found'] > 1:
                 raise AmbiguousHeaderError(self.version)
             elif 'zix12a' in self.version.values() or 'zix12b' in self.version.values():
                 raise NotImplementedError(
@@ -540,7 +544,7 @@ class RkDepotWork(RkCommon):
                 self.make_dirstruct(tmp_path.parent)
 
                 tmp_file_data = self.extract_data(file_pt, pos_stats)
-                self.inf(2, f"{self.telltale(file_num, RkCommon.count['fle_total'], file_pt)}")
+                self.inf(2, f"{self.telltale(file_num, RkCommon.count['files_total'], file_pt)}")
 
                 with tmp_path.open('wb') as of:
                     of.write(tmp_file_data)
@@ -550,7 +554,7 @@ class RkDepotWork(RkCommon):
         if self.void_dir(self.rk_tmp_dir):
             self.inf(2, "No files from archive unpacked.")
         else:
-            self.inf(2, f"Unpacked {RkCommon.count['fle_total']} files from archive: "
+            self.inf(2, f"Unpacked {RkCommon.count['files_total']} files from archive: "
                      f"{self.depot!s}")
 
     def list_depot_content(self):
@@ -568,7 +572,7 @@ class RkDepotWork(RkCommon):
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
         self.inf(0, f"For archive > {self.depot.name} the identified version "
-                 f"variant is: {self.bg_blu}{self.version['desc']!r}{self.std}")
+                 f"variant is: {self.bg_blue}{self.version['desc']!r}{self.reset}")
 
     def init_depot(self):
         """Initializes depot files to a ready state for further operations."""
@@ -582,7 +586,7 @@ class RkDepotWork(RkCommon):
                 self.get_version_specs()
                 self.collect_register()
                 self.reg = {str(file_pt): pos_data for file_pt, pos_data in self.reg.items()}
-                RkCommon.count['fle_total'] = len(self.reg)
+                RkCommon.count['files_total'] = len(self.reg)
 
             if 'alias' in self.version.keys():
                 self.inf(2, "Unofficial RPA found. "
