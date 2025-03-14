@@ -8,20 +8,18 @@ also possible.
 """
 
 # TODO: Overall tasks:
-# 1. Test new overwrite option for output
+# 1. Test atexit; remove remaining outcommented code
 # 2. Add functionality to force rpa format version from user input
-# 3. Refactor to use py logging
-# 4. use atexit
+# 3. Fix the modules codetag tasks
 
 __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.48.0-alpha'
+__version__ = '0.49.0-alpha'
 
 import argparse
-
-# import atexit  # for later use
+import atexit
 import glob
 import logging
 import pickle
@@ -283,9 +281,10 @@ class RkPathWork(RkCommon):
             self.overwrite = overwrite
         self.log = log_instance
 
-        self.rk_tmp_dir = None
         self.inp_pt = None
         # self.inp_pt = self.raw_inp.parent if self.raw_inp.is_file() else self.raw_inp
+        self.out_pt = None
+        self.rk_tmp_dir = None
         self.dep_lst = []
 
     def _dispose(self):
@@ -294,14 +293,15 @@ class RkPathWork(RkCommon):
         if self.void_dir(self.out_pt):
             self.out_pt.rmdir()
 
-        #  warning if for some reason nothing was unpacked
-        if self.void_dir(self.rk_tmp_dir):
-            self.inf(1, "The temp directory was unexpectely empty.", m_sort='warn')
-        #     self.rk_tmp_dir.rmdir()
-        # else:
-        #     shutil.rmtree(self.rk_tmp_dir)
+        try:
+            shutil.rmtree(self.rk_tmp_dir)
+        except TypeError:
+            self.log.warning(f"Tempdir '{self.rk_tmp_dir}' did not exist.")
+        else:
+            self.log.debug("Tempdir was successful removed.")
 
-        shutil.rmtree(self.rk_tmp_dir)
+        if self.rk_tmp_dir is not None and self.rk_tmp_dir.exists():
+            self.log.error(f"Tempdir '{self.rk_tmp_dir}' could not be removed!")
 
     def mv_tmp2outdir(self):
         """Copys all unpacked content from temporary dir to the output dir."""
@@ -325,14 +325,13 @@ class RkPathWork(RkCommon):
         """
         self.out_pt = self.inp_pt / self.outdir
 
-        # if self.out_pt.exists() and not self.void_dir(self.out_pt):
         if not self.overwrite and self.out_pt.exists() and not self.void_dir(self.out_pt):
             self.log.important(
                 f"The intended output directory {self.out_pt}\n"
                 "exists already and is not empty. Use option `--overwrite` or remove it "
                 "and try again.")
 
-            self._dispose()
+            # self._dispose()
             self.exit_app()
 
         self.make_dirstruct(self.out_pt)
@@ -891,7 +890,8 @@ def main():
 
     rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite,
                      log_instance=rkl)
-    rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite)
+    if cfg.task in ['extract', 'simulate']:
+        atexit.register(rkp._dispose)
     dep_lst, rk_tmp_dir, out_pt = rkp.pathworker()
     # FIXME: Should this be here? @end of pathworker
     RkCommon.count['dep_found'] = len(dep_lst)
@@ -922,7 +922,7 @@ def main():
         if cfg.task == 'extract':
             # FIXME: These both have perhaps no buissiness here. @class somewhere
             rkp.mv_tmp2outdir()
-        rkp._dispose()
+        # rkp._dispose()
 
         # done msg
         if RkCommon.count["dep_done"] > 0:
