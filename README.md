@@ -29,22 +29,25 @@ the given archives supported is.
 
 ## Usage
 ### Command line parameter overview
-**~$** rpakit.py [-e|-l|-t|-s] [-o OUTPUT] [--verbose] [-version] [-h, --help] target
+**~$** rpakit.py [-e|-l|-t|-s] [--overwrite] [-o OUTPUT] [--verbose] [--version] [-h, --help] target
 
 - *Positional options(required):*
-  + `target`                Directory path to search OR path of a RPA file to work on.
+  + `target`                Directory path to search OR path of a RPA file to work on
 
 - *Tasks(one required):*
-  + `-e`, `--expand`        Unpacks all stored files.
-  + `-l`, `--list`          Gives a listing of all stored files.
-  + `-t`, `--test`          Tests if archive(s) are a known format.
-  + `-s`, `--simulate`      Simulates the expand process.
+  + `-e`, `--expand`        Unpacks all stored files
+  + `-l`, `--list`          Lists all stored files
+  + `-t`, `--test`          Tests if archive(s) are a known format
+  + `-s`, `--simulate`      Simulates unpacking process
 
 - *Optional:*
-  + `-o`, `--outdir OUTPUT`  Extracts to the given path instead of standard.
-  + `--verbose`              Amount of info output. 0:none, 2:much, default:1
-  + `--version`              Shows version information
-  + `-h`, `--help `          Print this help
+  + `--overwrite`           Overwrites outdir and any content
+  + `-o`, `--outdir OUTPUT` Extracts to the given path instead of standard
+  + `--no_log`              Deactivates the use of a logfile in the script path
+  + `--loglevel`            Set minimum log-level for the console: Default is `notable`; Use
+                            `warning` or higher to reduce output
+  + `--version`             Prints the RpaKit version
+  + `-h`, `--help `         Print this help
 
 ### Example CLI usage
 - rpakit.py -e -o unpacked /home/{USERNAME}/somedir/search_here
@@ -65,53 +68,6 @@ This will test the given archive for his format and if valide prints it out.
 `rpa_kit.py -l c:/Users/{username}/game_dir/foo/ --verbose 2`
 Searches for RenPy archives in this directory and lists their file content in the
 console. The verboseness was also set to highest level (tell everything).
-
-
-### API
-> The API is possible not final!
-
-To provide the functionality of _**Rpa Kit**_ in other projects, the programs classes can be
-included. Besides the code for CLI use, the core functionality is organized in four classes in
-diamond inheritance.
-Short overview of this classes:
-
-#### class RkMain
-Entry class to process args and executing the related methods. Parameters:
-* `inpath`: _**str or pathlike, required**_
-    The archive file-path to open or a directory path with archives.
-    Absolute paths are preferred.
-* `task`: _**str, required**_
-    Sets the wanted task. Possible arguments are _exp_ (expand), _lst_ (listing),
-    _tst_(testing), _sim_(simulate)
-* `outdir`: _**str or pathlike, optional**_
-    Sets the name of the output directory. If _None_ the default is used.
-* `verbose`: _**int, optional**_
-    Print info about what we are doing. Values: 0-2; Defaults to 1
-
-
-#### class RkDepotWork
-This class is the apps core for analyzing, testing and unpacking/decoding RPA files. All
-needed inputs (depot, output path) are internaly providet.
-
-This class holds also two important dicts with the informations about the RPA formats. Here
-can be easily additional formats configured.
-<!-- `_rpaformats = {"header":{'rpaid': ''
-                          'desc': ''
-                          'alias': ''}}`
-
-`_rpaspecs = {{}}` -->
-
-#### class RkPathwork
-Support class for RPA Kit's path related tasks. Needet inputs (file-/dir path) are internaly
-provided. If input is a dir it searches there for archives, checks and filters them and puts
-them in a list. A archiv as input skips the search part.
-
-If wanted, users can do the path preparations in some other way/place and provide the archives
-itself to the other classes, instead with use of this one.
-
-#### class RkCommon
-Simple base class to provide some shared methods and variables for the other classes.
-
 
 ### Motivation - _Why this project?_
 This started 2017 as another learning experience in Python and and to understand a bit more
