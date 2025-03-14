@@ -17,7 +17,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.47.0-alpha'
+__version__ = '0.48.0-alpha'
 
 import argparse
 
@@ -695,7 +695,7 @@ def parse_args():
         '--list',
         dest='task',
         action='store_const',
-        const='listing',
+        const='list',
         help='Prints a listing of all stored files.')
 
     tasks.add_argument(
