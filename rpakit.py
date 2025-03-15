@@ -1,10 +1,25 @@
 #!/usr/bin/python3
 
 """
-RPAKit is a small app which searches in a given path(if not file) RenPy archives
-and decompresses the content in a custom-made subdirectory. Just listing without
-writing or testing & identifying the archiv or simulating the extract process is
-also possible.
+Copyright 2025 madeddy
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+
+
+RPAKit is a small app which searches in a given path(if not file) RenPy archives and
+decompresses the content in a custom-made subdirectory. Just listing without writing or
+testing & identifying the archiv or simulating the extract process is also possible.
 """
 
 # TODO: Overall tasks:
@@ -17,6 +32,7 @@ __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
 __version__ = '0.49.0-alpha'
+__url__ = "https://github.com/madeddy/RpaKit"
 
 import argparse
 import atexit
@@ -520,7 +536,7 @@ class RkDepotWork(RkCommon):
         self.version = {}
         self.reg = {}
         self.dep_initstate = None
-        RkCommon.count['dep_id_found'] = 0  # IDEA: store instead of this id stings?
+        RkCommon.count['dep_id_found'] = 0  # IDEA: store instead of this ids?
         # RkCommon.count['dep_id_found'].clear()
         # self.dep_id_found = []
 
@@ -602,7 +618,11 @@ class RkDepotWork(RkCommon):
         return offset, key
 
     def collect_register(self):
-        """Gets the depot's register through unzip and unpickle."""
+        """
+        Collects the depot's register through use of unzip, followed by unpickling.
+        Diverse extra steps for some depot formats are also managed from here.
+
+        """
 
         # FIXME: make offset and key vars class wide; move this line somewhere else?
         offset, key = self.get_cipher()
@@ -754,7 +774,7 @@ class RkDepotWork(RkCommon):
                              "simulate, test")
 
     def init_depot(self):
-        """Initializes depot files to a ready state for further operations."""
+        """Initializes and analyzes depot files to a ready state for further operations."""
         try:
             self.get_header()
             self.guess_version()
@@ -781,10 +801,9 @@ class RkDepotWork(RkCommon):
 def parse_args():
     """Argument parser to provide functionality for the command-line interface."""
 
-    desc = "Program for searching and unpacking RPA files."
     epi = "Default output dir is set to `{Target}/rpakit_out/`. Change with option -o."
     ap = argparse.ArgumentParser(
-        description=desc,
+        description="Program for searching and unpacking RPA files.",
         epilog=epi,
         formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30, width=100))
 
@@ -872,6 +891,7 @@ def main():
         raise RuntimeError("Must be executed in Python 3.9 or later.\n"
                            f"You are running {sys.version}")
     cfg = parse_args()
+    # TODO: Move Path casting and checks in classes
     pathlike_inp = Path(cfg.inpath)
 
     try:
