@@ -254,7 +254,12 @@ class RkCommon:
     some shared methods and variables.
     """
     name = __title__
-    count = {'dep_found': 0, 'dep_done': 0, 'files_total': 0, 'dep_id_found': 0}
+    count = {
+        'dep_found': 0,
+        'dep_done': 0,
+        'files_total': 0,
+        'dep_id_found': 0
+        }
 
     def pm(self, fraction, total, object, bg_color=None):
         """Returns a fraction-meter like output for use in tty."""
@@ -600,6 +605,7 @@ class RkDepotWork(RkCommon):
             slos, slky = self.version['offset'], self.version['key']
             if self.version['rpaid'] != 'rpa1':
                 offset = int(self.header[slos], 16)
+
             if self.version['rpaid'] != 'rpa2':
                 key = int(self.header[slky], 16)
 
@@ -770,8 +776,9 @@ class RkDepotWork(RkCommon):
         elif self.task == 'test':
             self.test_depot()
         else:
-            raise ValueError(f"Unknown task request: {self.task!r}; Choose either: extract, list, "
-                             "simulate, test")
+            raise ValueError(
+                f"Unknown task requested: {self.task!r}; Choose either: extract, list, "
+                "simulate, test")
 
     def init_depot(self):
         """Initializes and analyzes depot files to a ready state for further operations."""
@@ -794,8 +801,8 @@ class RkDepotWork(RkCommon):
                 self.log.info("Official RPA found.")
 
         except OSError as err:
-            raise RpaKitError(f"{err}: Error while opening archive file "
-                              f">{self.depot}< for initialization.")
+            raise RpaKitError(
+                f"{err}: Error while opening archive file >{self.depot}< for initialization.")
 
 
 def parse_args():
@@ -878,8 +885,7 @@ def parse_args():
         action='version',
         version=f"{__title__} {__version__}")
 
-    args = ap.parse_args()
-    return args
+    return ap.parse_args()
 
 
 def main():
