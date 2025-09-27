@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 """
 Copyright 2025 madeddy
@@ -21,17 +21,29 @@ RPAKit is a small app which searches in a given path(if not file) RenPy archives
 decompresses the content in a custom-made subdirectory. Just listing without writing or
 testing & identifying the archiv or simulating the extract process is also possible.
 """
+# FIXME: Big projects may fail with "OSError: [Errno 28] No space left on device" Find a way to
+# prevent this. (possible a big task)
+# 1. Maybe rework tmpdir:unpack-move-delete process into smaller steps (10GiB each?)
+# 2. Use more as one depot list with limited size (5GiB?)
+# 3. Measure size of std temp and depotlist and if the size of the latter too big is then change
+#    the tmpdir location(with the dir parameter of tempfile)
+# 4. Add a warning if the archives size is higher as x % of the size limit of the OS tmpdir
+# 5. Add a option to create the tempdir alongside the outdir
+# options 1,2 are complicated, 4 seems short term usable, 5 seems a good long term option
 
 # TODO: Overall tasks:
-# 1. Test atexit; remove remaining outcommented code
-# 2. Add functionality to force rpa format version from user input
-# 3. Fix the modules codetag tasks
+# - Kill simulation option! Nobody uses it.
+# - Add option to move rpa after unpacking to a backup dir
+# - Test atexit; remove remaining outcommented code
+# - Add functionality to force rpa format version from user input
+# - Rework the order of tasks into clearer steps e.g. prepare -> get depot list -> work depots
+# - Fix the modules codetag tasks
 
 __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.49.0-alpha'
+__version__ = '0.50.0-alpha'
 __url__ = "https://github.com/madeddy/RpaKit"
 
 import argparse
@@ -81,7 +93,8 @@ class AmbiguousHeaderError(RpaKitError):
         super().__init__(
             "Detection of the archive format failed because multiple matches where found.\n"
             f"Archive: {self.dep} with Version > {self.ver}")
-
+            # NOTE: When the option to force the RPA version implemented is, we need to add another
+            # line with info about this
 
 class NoRpaOrUnknownWarning(RpaKitError):
     """Warning raised if a archiv format could not identified.
@@ -324,7 +337,8 @@ class RkPathWork(RkCommon):
 
     def mv_tmp2outdir(self):
         """Copys all unpacked content from temporary dir to the output dir."""
-        # FIXME: errors if a src dir exists in dst which happens with --overwrite option
+        # FIXME: move() errors if a src dir exists in dst if --overwrite option is used
+
         # for entry in self.rk_tmp_dir.iterdir():
         #     shutil.move(entry, self.out_pt)
 
@@ -351,6 +365,8 @@ class RkPathWork(RkCommon):
                 "and try again.")
 
             # self._dispose()
+            # FIXME: In library usage this must be prevented to execute or it ends also the
+            # parent app
             self.exit_app()
 
         self.make_dirstruct(self.out_pt)
@@ -372,6 +388,8 @@ class RkPathWork(RkCommon):
                 twin = str(entry.with_suffix('.rpa'))
                 if twin in self.dep_lst:
                     self.dep_lst.remove(twin)
+                    # TODO: Check if this really a rpa v1 is and not some custom called rpi
+                    # If positive we can count it as a v1 depot
                     # NOTE: Now counted in main
                     # RkCommon.count['dep_found'] -= 1
 
@@ -412,6 +430,8 @@ class RkPathWork(RkCommon):
 
         self.ident_paired_depot()
 
+        # TODO: This is a preparation step and should be moved to start tasksinit, or maybe
+        # somewhere else?
         if self.task in ['extract', 'simulate']:
             self.rk_tmp_dir = Path(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
             self.make_output()
@@ -500,6 +520,8 @@ class RkDepotWork(RkCommon):
         }
     }
 
+    # TODO: Unify rpaformats and rpaspecs: WIP
+
     rpaspecs = {
         'rpa1': {
             'offset': 0,
@@ -556,6 +578,7 @@ class RkDepotWork(RkCommon):
     #     self.dep_initstate = None
     #     RkCommon.count['dep_id_found'] = 0
 
+    # TODO: Move this down above the calls to it
     def extract_data(self, file_pt, pos_stats):
         """Extracts the archive data to a temporary file."""
         if self.depot.suffix == '.rpi':
@@ -594,6 +617,7 @@ class RkDepotWork(RkCommon):
                     val[num] += (b'',)
 
     def get_cipher(self):
+        # IDEA: Maybe a better name e.g. get_rpa_specs
         """Fetches the cipher for the register from the header infos."""
 
         # NOTE: Slicing is error prone; perhaps use of "split parts" as a fallback
@@ -651,6 +675,7 @@ class RkDepotWork(RkCommon):
             raise f"Error while aquiring version specifications for {self.depot}."
 
     def get_header_start(self):
+        # NOTE: Maybe a better name e.g. get_rpa_header
         """
         Reads the file header in and trys to produce a decoded string which we
         are able to match against the available format ID's.
@@ -672,6 +697,7 @@ class RkDepotWork(RkCommon):
         return magic
 
     def guess_version(self):
+        # NOTE: Maybe a better name e.g. guess_rpa_version
         """
         Determines probable archive version from header/suffix and pairs fitting alias
         variants with a main format-ID.
@@ -709,6 +735,7 @@ class RkDepotWork(RkCommon):
             self.log.info(f"Found archive format: {self.version['desc']}")
 
     def get_header(self):
+        # IDEA: Unify with get_header_start
         """Opens file and reads header line in."""
         with self.depot.open('rb') as of:
             of.seek(0)
@@ -778,6 +805,7 @@ class RkDepotWork(RkCommon):
                 f"Unknown task requested: {self.task!r}; Choose either: extract, list, "
                 "simulate, test")
 
+    # TODO: Move this above check_out_pt
     def init_depot(self):
         """Initializes and analyzes depot files to a ready state for further operations."""
         try:
@@ -927,6 +955,14 @@ def main():
         rkl.warning("No RPA files found. Was the correct path given?")
 
     while dep_lst:
+
+        # TODO: Add check for needed space of all depots and compare with free space of temp
+        # dest_free = shutil.disk_usage(rk_tmp_dir).free / 1024 ** 3
+        # list_size = sum(entry.stat().st_size for entry in dep_lst if entry.exists()) / 1024 ** 3
+        # if dest_free < list_size * 1.1:
+        #     raise OSError(os.strerror(28))
+        # Maybe this should be in the RkDepotWork class or in a separate function
+
         depot = dep_lst.pop()
 
         rkd = RkDepotWork(cfg.task, depot, rk_tmp_dir, log_instance=rkl)
@@ -939,6 +975,7 @@ def main():
         rkd.work_depot()
         RkCommon.count['dep_done'] += 1
 
+        # FIXME: Causes chaos in the logfile; ANSI codes are written raw
         report = rkd.pm(RkCommon.count['dep_done'], RkCommon.count['dep_found'], depot)
         rkl.important(f"{report}")
 
