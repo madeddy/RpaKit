@@ -16,11 +16,13 @@ Copyright 2025 madeddy
    limitations under the License.
 
 
-
-RPAKit is a small app which searches in a given path(if not file) RenPy archives and
-decompresses the content in a custom-made subdirectory. Just listing without writing or
-testing & identifying the archiv or simulating the extract process is also possible.
+RPAKit is a small app for the work with Ren'Py Archives(RPA).
+As input it takes single or multiple path or file objects, which will then be filtered for legal
+Ren'Py archives. These will then decompressed and the content written in a custom-made subdirectory.
+Just listing the archive files without writing or testing & identifying the archiv or
+simulating the extraction process is also possible.
 """
+
 # FIXME: Big projects may fail with "OSError: [Errno 28] No space left on device" Find a way to
 # prevent this. (possible a big task)
 # 1. Maybe rework tmpdir:unpack-move-delete process into smaller steps (10GiB each?)
@@ -91,7 +93,7 @@ class AmbiguousHeaderError(RpaKitError):
         self.dep = dep
         self.ver = [v for k, v in ver.items() if 'rpaid' in k]
         super().__init__(
-            "Detection of the archive format failed because multiple matches where found.\n"
+            "Detection of the archive format failed, because multiple matches where found.\n"
             f"Archive: {self.dep} with Version > {self.ver}")
             # NOTE: When the option to force the RPA version implemented is, we need to add another
             # line with info about this
@@ -344,7 +346,7 @@ class RkPathWork(RkCommon):
         # for entry in self.rk_tmp_dir.iterdir():
         #     shutil.move(entry, self.out_pt)
 
-        # move() errors on existing obj so the manual way with copy-/removetree is used
+        #  as a workaround the manual way with copy-/removetree must be used
         shutil.copytree(self.rk_tmp_dir, self.out_pt, dirs_exist_ok=True)
 
     def exit_app(self):
@@ -830,7 +832,7 @@ class RkDepotWork(RkCommon):
 
         except OSError as err:
             raise RpaKitError(
-                f"{err}: Error while opening archive file >{self.depot}< for initialization.")
+                f"{err}: Error while working on archive file >{self.depot}< for initialization.")
 
 
 def parse_args():
@@ -898,7 +900,7 @@ def parse_args():
     ap.add_argument(
         '--no_log',
         action='store_false',
-        help='Deactivates the use of a logfile in the script path')
+        help='Deactivates the use of a logfile written to the script path.')
 
     ap.add_argument(
         '--loglevel',
@@ -924,14 +926,14 @@ def main():
     if not sys.version_info[:2] >= (3, 9):
         raise RuntimeError("Must be executed in Python 3.9 or later.\n"
                            f"You are running {sys.version}")
-    cfg = parse_args()
+    # Preperations #
     # TODO: Move Path casting and checks in classes
     pathlike_inp = Path(cfg.inpath)
 
     try:
         rkl = RpaKitLog('RK', logfile=cfg.no_log, loglevel=cfg.loglevel.upper())
     except Exception:
-        raise RpaKitError("Logging initialization failed!", traceback.format_exc())
+        raise RpaKitError(f"Logging initialization failed! {traceback.format_exc()}")
 
     # begin msg
     if pathlike_inp.is_file():
@@ -942,6 +944,7 @@ def main():
         rkl.error(f"Could not identify input: {cfg.inpath} Check and retry.")
         # FIXME: We need to exit here
 
+    # Path stuff #
     rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite,
                      log_instance=rkl)
     if cfg.task in ['extract', 'simulate']:
@@ -956,6 +959,7 @@ def main():
     else:
         rkl.warning("No RPA files found. Was the correct path given?")
 
+    # Depot stuff #
     while dep_lst:
 
         # TODO: Add check for needed space of all depots and compare with free space of temp
@@ -981,9 +985,11 @@ def main():
         report = rkd.pm(RkCommon.count['dep_done'], RkCommon.count['dep_found'], depot)
         rkl.important(f"{report}")
 
+    # Finishing
     if cfg.task in ['extract', 'simulate']:
         if cfg.task == 'extract':
             # FIXME: These both have perhaps no buissiness here. @class somewhere
+            # Also related to the OSError from the FIXME at the top
             rkp.mv_tmp2outdir()
         # rkp._dispose()
 
