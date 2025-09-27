@@ -904,11 +904,12 @@ def parse_args():
 
     ap.add_argument(
         '--loglevel',
-        type=str,
+        type=str.upper,
         default='IMPORTANT',
         choices=['DEBUG', 'INFO', 'IMPORTANT', 'WARNING', 'ERROR', 'CRITICAL'],
-        help='Set minimum log-level for the console; Default is "important"; Use "warning" '
-        'or higher to reduce output')
+        help='Set minimum log-level for the console. Default is "important"; Use "warning" '
+        'or higher to reduce output',
+    )
 
     ap.add_argument(
         '--version',
