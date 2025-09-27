@@ -919,7 +919,7 @@ def parse_args():
     return ap.parse_args()
 
 
-def main():
+def main(cfg=None):  # noqa: C901
     """
     This checks if the minimum required Python version runs, instantiates the class,
     delivers the parameters to its init and executes the program from CLI.
@@ -927,6 +927,10 @@ def main():
     if not sys.version_info[:2] >= (3, 9):
         raise RuntimeError("Must be executed in Python 3.9 or later.\n"
                            f"You are running {sys.version}")
+    if not cfg:
+        print("No configuration found, but is required. Termminating.")
+        RkPathWork.exit_app(1)
+
     # Preperations #
     # TODO: Move Path casting and checks in classes
     pathlike_inp = Path(cfg.inpath)
@@ -944,6 +948,7 @@ def main():
     else:
         rkl.error(f"Could not identify input: {cfg.inpath} Check and retry.")
         # FIXME: We need to exit here
+        RkPathWork.exit_app(2)  # TODO: better(?) raise OSError(os.strerror(2))
 
     # Path stuff #
     rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite,
@@ -958,7 +963,7 @@ def main():
         rkl.important(f"Found {RkCommon.count['dep_found']} RPA files to process:\n"
                       f"{chr(10).join([*map(str, dep_lst)])}")
     else:
-        rkl.warning("No RPA files found. Was the correct path given?")
+        rkp.exit_app(1)  # TODO: raise ValueError or custom exception
 
     # Depot stuff #
     while dep_lst:
@@ -1009,4 +1014,5 @@ def main():
         rkl.info("Task completed.")
 
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    main(args)
