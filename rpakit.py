@@ -57,8 +57,6 @@ if sys.platform.startswith('win32'):
     except ImportError:
         tty_colors = False
 
-
-# NOTE: They use colors from RkCommon with self. Does this even work?
 class RpaKitError(Exception):
     """Base class for exceptions in RpaKit."""
 
@@ -66,7 +64,7 @@ class RpaKitError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return f"{self.red}{repr(self.msg)}{self.reset}"
+        return f"{RpaKitLog.cm('red')}{repr(self.msg)}{RpaKitLog.cm('reset')}"
 
 
 class AmbiguousHeaderError(RpaKitError):
