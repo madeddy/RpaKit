@@ -159,18 +159,20 @@ class RpaKitLog(logging.Logger):
         'blink': '\x1b[5m',  # blinking
         'reverse': '\x1b[7m',  # fg <-> bg
         'black': '\x1b[30m',
-        'orange': '\x1b[31m',
+        'red': '\x1b[31m',
         'green': '\x1b[32m',
-        'yellew': '\x1b[33m',
+        'yellow': '\x1b[33m',
         'blue': '\x1b[34m',
-        'red': '\x1b[35m',
+        'magenta': '\x1b[35m',
         'cyan': '\x1b[36m',
+        'lyellow': '\x1b[93m',  # light yellow
         'lblue': '\x1b[94m',  # light blue
         'bg_yellow': '\x1b[43;30m',  # bg = background
         'bg_blue': '\x1b[44;30m',
-        'bg_red': '\x1b[45;30m',
+        'bg_magenta': '\x1b[45;30m',
         'bg_white': '\x1b[47;30m',
-        'ret': '\x1b[10D\x1b[1A\x1b[K'  # write on same line: (xD=x rows left, xA=x lines up,
+        'erase': '\x1b[1A\x1b[2K\x1b[1A',  # erase last line; don't write after this log entry
+        'return': '\x1b[10D\x1b[1A\x1b[K',  # write on same line: (xD=x rows left, xA=x lines up,
         # K=erase line)
     }
 
@@ -348,7 +350,7 @@ class RkPathWork(RkCommon):
     def exit_app(self):
         self.log.info("Exiting RpaKit.")
         for i in range(3, -1, -1):
-            print(f"{self.log.cm('bg_red')}{i}%{self.log.cm('reset')}", end='\r')
+            print(f"{self.log.cm('bg_magenta')}{i}%{self.log.cm('reset')}", end='\r')
         sys.exit(0)
 
     def make_output(self):
