@@ -838,10 +838,9 @@ class RkDepotWork(RkCommon):
 def parse_args():
     """Argument parser to provide functionality for the command-line interface."""
 
-    epi = "Default output dir is set to `{Target}/rpakit_out/`. Change with option -o."
     ap = argparse.ArgumentParser(
-        description="Program for searching and unpacking RPA files.",
-        epilog=epi,
+        description="A application for searching and unpacking RPA files.",
+        epilog="Default output dir is set to `{Target}/rpakit_out/`. Change with option -o.",
         formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30, width=100))
 
     ap.add_argument(
@@ -859,7 +858,7 @@ def parse_args():
         dest='task',
         action='store_const',
         const='extract',
-        help='Extracts all stored files and dirs.')
+        help='Extracts all stored files and dirs from the RPA.')
 
     tasks.add_argument(
         '-l',
@@ -875,7 +874,8 @@ def parse_args():
         dest='task',
         action='store_const',
         const='test',
-        help='Tests if archive(s) are a known format.')
+        help='Verifies if archive(s) are a known RPA format.'
+    )
 
     tasks.add_argument(
         '-s',
@@ -890,7 +890,8 @@ def parse_args():
         '--outdir',
         action='store',
         type=str,
-        help='Extracts to the given path instead to the default destination.')
+        help='Extracts to the specified path instead of the default destination.'
+    )
 
     ap.add_argument(
         '--overwrite',
