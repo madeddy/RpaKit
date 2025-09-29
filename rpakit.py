@@ -937,23 +937,23 @@ def main(cfg=None):  # noqa: C901
     pathlike_inp = Path(cfg.inpath)
 
     try:
-        rkl = RpaKitLog('RK', logfile=cfg.no_log, loglevel=cfg.loglevel.upper())
+        rklog = RpaKitLog('RK', logfile=cfg.no_log, loglevel=cfg.loglevel.upper())
     except Exception:
         raise RpaKitError(f"Logging initialization failed! {traceback.format_exc()}")
 
     # begin msg
     if pathlike_inp.is_file():
-        rkl.info(f"Input is a file. Processing {cfg.inpath}.")
+        rklog.info(f"Input is a file. Processing {cfg.inpath}.")
     elif pathlike_inp.is_dir():
-        rkl.info(f"Input is a directory. Searching recursively for RPA in {cfg.inpath}.")
+        rklog.info(f"Input is a directory. Searching recursively for RPA in {cfg.inpath}.")
     else:
-        rkl.error(f"Could not identify input: {cfg.inpath} Check and retry.")
+        rklog.error(f"Could not identify input: {cfg.inpath} Check and retry.")
         # FIXME: We need to exit here
         RkPathWork.exit_app(2)  # TODO: better(?) raise OSError(os.strerror(2))
 
     # Path stuff #
     rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite,
-                     log_instance=rkl)
+                     log_instance=rklog)
     if cfg.task in ['extract', 'simulate']:
         atexit.register(rkp._dispose)
     dep_lst, rk_tmp_dir, out_pt = rkp.pathworker()
@@ -961,9 +961,10 @@ def main(cfg=None):  # noqa: C901
     RkCommon.count['dep_found'] = len(dep_lst)
 
     if RkCommon.count['dep_found'] > 0:
-        rkl.important(f"Found {RkCommon.count['dep_found']} RPA files to process:\n"
-                      f"{chr(10).join([*map(str, dep_lst)])}")
+        rklog.important(f"Found {RkCommon.count['dep_found']} RPA files to process:\n"
+                        f"{chr(10).join([*map(str, dep_lst)])}")
     else:
+        rklog.warning("No RPA files found. Was the correct path given?")
         rkp.exit_app(1)  # TODO: raise ValueError or custom exception
 
     # Depot stuff #
@@ -978,19 +979,19 @@ def main(cfg=None):  # noqa: C901
 
         depot = dep_lst.pop()
 
-        rkd = RkDepotWork(cfg.task, depot, rk_tmp_dir, log_instance=rkl)
+        rkd = RkDepotWork(cfg.task, depot, rk_tmp_dir, log_instance=rklog)
 
         # if something wrong with initializing dep
         if rkd.dep_initstate is False:
+            rklog.warning(f"Archive could not be processed. Skipping: {depot!s}")
             continue
-        # TODO: Tell about this
 
         rkd.work_depot()
         RkCommon.count['dep_done'] += 1
 
         # FIXME: Causes chaos in the logfile; ANSI codes are written raw
         report = rkd.pm(RkCommon.count['dep_done'], RkCommon.count['dep_found'], depot)
-        rkl.important(f"{report}")
+        rklog.important(f"{report}")
 
     # Finishing
     if cfg.task in ['extract', 'simulate']:
@@ -1003,16 +1004,16 @@ def main(cfg=None):  # noqa: C901
         # done msg
         if RkCommon.count["dep_done"] > 0:
             if cfg.task == 'extract':
-                rkl.important(f" Completed. We unpacked {RkCommon.count['dep_done']} archive(s).")
+                rklog.important(f" Completed. We unpacked {RkCommon.count['dep_done']} archive(s).")
             else:
-                rkl.important(
+                rklog.important(
                     f"We simulated the unpacking of {RkCommon.count['dep_done']} "
                     "archive(s).")
         else:
-            rkl.warning("Oops! No archives where processed...")
+            rklog.warning("Oops! No archives where processed...")
 
     elif cfg.task in ['listing', 'test']:
-        rkl.info("Task completed.")
+        rklog.info("Task completed.")
 
 if __name__ == '__main__':
     args = parse_args()
