@@ -41,11 +41,11 @@ simulating the extraction process is also possible.
 # - Rework the order of tasks into clearer steps e.g. prepare -> get depot list -> work depots
 # - Fix the modules codetag tasks
 
-__title__ = 'RPA Kit'
-__license__ = 'Apache 2.0'
-__author__ = 'madeddy'
-__status__ = 'Development'
-__version__ = '0.51.0-alpha'
+__title__ = "RPA Kit"
+__license__ = "Apache 2.0"
+__author__ = "madeddy"
+__status__ = "Development"
+__version__ = "0.51.0-alpha"
 __url__ = "https://github.com/madeddy/RpaKit"
 
 import argparse
@@ -85,12 +85,14 @@ class AmbiguousHeaderError(RpaKitError):
 
     def __init__(self, dep, ver):
         self.dep = dep
-        self.ver = [v for k, v in ver.items() if 'rpaid' in k]
+        self.ver = [v for k, v in ver.items() if "rpaid" in k]
         super().__init__(
             "Detection of the archive format failed, because multiple matches where found.\n"
-            f"Archive: {self.dep} with Version > {self.ver}")
-            # NOTE: When the option to force the RPA version implemented is, we need to add another
-            # line with info about this
+            f"Archive: {self.dep} with Version > {self.ver}"
+        )
+        # NOTE: When the option to force the RPA version implemented is, we need to add another
+        # line with info about this
+
 
 class NoRpaOrUnknownWarning(RpaKitError):
     """Warning raised if a archiv format could not identified.
@@ -105,7 +107,8 @@ class NoRpaOrUnknownWarning(RpaKitError):
         self.head = head
         super().__init__(
             "Header not recognizable. The tested archive is not a RPA or a custom type.\n"
-            f"Archive: {self.dep} with header: > {self._header}")
+            f"Archive: {self.dep} with header: > {self._header}"
+        )
 
 
 class BaseFormatter(logging.Formatter):
@@ -133,14 +136,14 @@ class ColorFormatter(logging.Formatter):
     other handlers emit ANSI escape sequences.
     """
 
-    reset = '\x1b[0m'  # reset
+    reset = "\x1b[0m"  # reset
     level_map = {
-        'DEBUG': '\x1b[1;37m',  # bold, grey
-        'INFO': '\x1b[32m',  # green
-        'IMPORTANT': '\x1b[94m',  # light blue
-        'WARNING': '\x1b[33m',  # yellow
-        'ERROR': '\x1b[1;35m',  # bold, red
-        'CRITICAL': '\x1b[30;41m'  # black, red bg
+        "DEBUG": "\x1b[1;37m",  # bold, grey
+        "INFO": "\x1b[32m",  # green
+        "IMPORTANT": "\x1b[94m",  # light blue
+        "WARNING": "\x1b[33m",  # yellow
+        "ERROR": "\x1b[1;35m",  # bold, red
+        "CRITICAL": "\x1b[30;41m",  # black, red bg
     }
     ansi_escape = re.compile(r'(\x9b|\x1b\[)[0-?]*[ -\/]*[@-~]')
 
@@ -153,11 +156,11 @@ class ColorFormatter(logging.Formatter):
             return session_fmt.format(record)
 
         # Get the ANSI sequence and apply it to the levelname
-        ansi_seq = self.level_map.get(record_copy.levelname, '\x1b[1;37m')
+        ansi_seq = self.level_map.get(record_copy.levelname, "\x1b[1;37m")
         new_levelname = f"[{ansi_seq}{record_copy.levelname}{self.reset}]"
 
         # Calc the length of the raw levelname and padding
-        visible_len = len(self.ansi_escape.sub('', f"[{record_copy.levelname}]"))
+        visible_len = len(self.ansi_escape.sub("", f"[{record_copy.levelname}]"))
         padding = len(new_levelname) + 11 - visible_len
 
         # Add the padding to the end of the colored, bracketed levelname
@@ -181,37 +184,37 @@ class RpaKitLog(logging.Logger):
     """
 
     ansi_colormap = {
-        'reset': '\x1b[0m',
-        'bold': '\x1b[1m',
-        'uline': '\x1b[4m',  # underline
-        'blink': '\x1b[5m',  # blinking
-        'reverse': '\x1b[7m',  # fg <-> bg
-        'black': '\x1b[30m',
-        'red': '\x1b[31m',
-        'green': '\x1b[32m',
-        'yellow': '\x1b[33m',
-        'blue': '\x1b[34m',
-        'magenta': '\x1b[35m',
-        'cyan': '\x1b[36m',
-        'lyellow': '\x1b[93m',  # light yellow
-        'lblue': '\x1b[94m',  # light blue
-        'bg_yellow': '\x1b[43;30m',  # bg = background
-        'bg_blue': '\x1b[44;30m',
-        'bg_magenta': '\x1b[45;30m',
-        'bg_white': '\x1b[47;30m',
-        'erase': '\x1b[1A\x1b[2K\x1b[1A',  # erase last line; don't write after this log entry
-        'return': '\x1b[10D\x1b[1A\x1b[K',  # write on same line: (xD=x rows left, xA=x lines up,
+        "reset": "\x1b[0m",
+        "bold": "\x1b[1m",
+        "uline": "\x1b[4m",  # underline
+        "blink": "\x1b[5m",  # blinking
+        "reverse": "\x1b[7m",  # fg <-> bg
+        "black": "\x1b[30m",
+        "red": "\x1b[31m",
+        "green": "\x1b[32m",
+        "yellow": "\x1b[33m",
+        "blue": "\x1b[34m",
+        "magenta": "\x1b[35m",
+        "cyan": "\x1b[36m",
+        "lyellow": "\x1b[93m",  # light yellow
+        "lblue": "\x1b[94m",  # light blue
+        "bg_b_yellow": "\x1b[103;30m",  # bg = background
+        "bg_blue": "\x1b[44;30m",
+        "bg_magenta": "\x1b[45;30m",
+        "bg_white": "\x1b[47;30m",
+        "erase": "\x1b[1A\x1b[2K\x1b[1A",  # erase last line; don't write after this log entry
+        "return": "\x1b[10D\x1b[1A\x1b[K",  # write on same line: (xD=x rows left, xA=x lines up,
         # K=erase line)
     }
 
-    def __init__(self, name, logfile=True, loglevel='IMPORTANT'):
+    def __init__(self, name, logfile=True, loglevel="IMPORTANT"):
         super().__init__(name)
         self.loglevel = loglevel
         self.tty_colors = True
         self.oldwin_tty_colors()
-        logging.addLevelName(25, 'IMPORTANT')
+        logging.addLevelName(25, "IMPORTANT")
         logging.Logger.important = self.important
-        logging.addLevelName(60, 'SESSION')
+        logging.addLevelName(60, "SESSION")
         logging.Logger.important = self.session
 
         self.init_streamhandler()
@@ -227,7 +230,7 @@ class RpaKitLog(logging.Logger):
         -11 is STD_OUTPUT_HANDLE; -12 is STD_ERROR_HANDLE
         7 is ENABLE_VIRTUAL_TERMINAL_PROCESSING
         """
-        if sys.platform.startswith('win32') and sys.getwindowsversion()[2] < 16257:
+        if sys.platform.startswith("win32") and sys.getwindowsversion()[2] < 16257:
             try:
                 from ctypes import windll
                 h = windll.kernel32
@@ -243,11 +246,12 @@ class RpaKitLog(logging.Logger):
             # useful this days for win7/8 etc.
 
             RpaKitLog.ansi_colormap.update(
-                (k, '') for k in self.ansi_colormap if not self.tty_colors)
+                (k, "") for k in self.ansi_colormap if not self.tty_colors
+            )
 
     def important(self, msg, *args, **kwargs):
         """
-        Adds a custom logging level 'IMPORTANT' with severity level 25, between
+        Adds a custom logging level `IMPORTANT` with severity level 25, between
         info(20) and warning(30).
         """
         if self.isEnabledFor(25):
@@ -255,7 +259,7 @@ class RpaKitLog(logging.Logger):
 
     def session(self, msg, *args, **kwargs):
         """
-        Adds a custom logging level 'SESSION' with severity level 60, which is intended to
+        Adds a custom logging level `SESSION` with severity level 60, which is intended to
         write always.
         """
         if self.isEnabledFor(60):
@@ -287,7 +291,7 @@ class RpaKitLog(logging.Logger):
 
         fh = TimedRotatingFileHandler(log_path, when='midnight', backupCount=10)
         fh.suffix = '%d.%b%Y'
-        fh.setLevel('DEBUG')
+        fh.setLevel("DEBUG")
         fh.setFormatter(
             BaseFormatter(fmt_default, fmt_session, datefmt='%d.%b%Y %H:%M:%S', style='{')
         )
@@ -304,19 +308,22 @@ class RkCommon:
     "Rpa Kit Common" acts as superclass for the classes RkPathWork and RkDepotWork and provides
     some shared methods and variables.
     """
+
     name = __title__
     count = {
-        'dep_found': 0,
-        'dep_done': 0,
-        'files_total': 0,
-        'dep_id_found': 0
-        }
+        "dep_found": 0,
+        "dep_done": 0,
+        "files_total": 0,
+        "dep_id_found": 0
+        }  # fmt: skip
 
     def pm(self, fraction, total, object, bg_color=None):
         """Returns a fraction-meter like output for use in tty."""
-        color = bg_color or 'bg_blue'
-        return (f"[{self.log.cm(color)}{fraction:{len(str(total))}>n}/{total:>n}"
-                f"{self.log.cm('reset')}] {object!s:>4}")
+        color = bg_color or "bg_blue"
+        return (
+            f"[{self.log.cm(color)}{fraction:{len(str(total))}>n}/{total:>n}"
+            f"{self.log.cm('reset')}] {object!s:>4}"
+        )
 
     @classmethod
     def void_dir(cls, dst):
@@ -340,7 +347,7 @@ class RkPathWork(RkCommon):
     """
 
     log = None
-    outdir = 'rpakit_out'
+    outdir = "rpakit_out"
     overwrite = False
 
     def __init__(self, raw_inp, task, outdir=None, overwrite=None, log_instance=None):
@@ -402,7 +409,8 @@ class RkPathWork(RkCommon):
             self.log.important(
                 f"The intended output directory {self.out_pt}\n"
                 "exists already and is not empty. Use option `--overwrite` or remove it "
-                "and try again.")
+                "and try again."
+            )
 
             # self._dispose()
             # FIXME: In library usage this must be prevented to execute or it ends also the
@@ -424,8 +432,8 @@ class RkPathWork(RkCommon):
 
         lst_copy = self.dep_lst[:]
         for entry in lst_copy:
-            if entry.suffix == '.rpi':
-                twin = str(entry.with_suffix('.rpa'))
+            if entry.suffix == ".rpi":
+                twin = str(entry.with_suffix(".rpa"))
                 if twin in self.dep_lst:
                     self.dep_lst.remove(twin)
                     # TODO: Check if this really a rpa v1 is and not some custom called rpi
@@ -438,7 +446,7 @@ class RkPathWork(RkCommon):
         Filters from input path for rpa and returns them. Recurses into all given directorys
         by calling itself.
         """
-        if inpath.is_file() and inpath.suffix in ['.rpa', '.rpi', '.rpc']:
+        if inpath.is_file() and inpath.suffix in [".rpa", ".rpi", ".rpc"]:
             yield inpath
         elif inpath.is_dir():
             for item in inpath.iterdir():
@@ -472,8 +480,8 @@ class RkPathWork(RkCommon):
 
         # TODO: This is a preparation step and should be moved to start tasksinit, or maybe
         # somewhere else?
-        if self.task in ['extract', 'simulate']:
-            self.rk_tmp_dir = Path(tempfile.mkdtemp(prefix='RpaKit.', suffix='.tmp'))
+        if self.task in ["extract", "simulate"]:
+            self.rk_tmp_dir = Path(tempfile.mkdtemp(prefix="RpaKit.", suffix=".tmp"))
             self.make_output()
 
         return self.dep_lst, self.rk_tmp_dir, self.out_pt
@@ -485,6 +493,7 @@ class RkDepotWork(RkCommon):
     "depot", "task", "rk_tmp_dir" and "out_pt".
 
     """
+
     # IDEA: Alternate for rpaversion dicts; example:
     # rpaformats are simple functions of (archive) -> archivetype
 
@@ -506,87 +515,87 @@ class RkDepotWork(RkCommon):
     #         pass
 
     rpaformats = {
-        'x': {
-            'rpaid': 'rpa1',
-            'desc': 'Legacy type RPA-1.0'
+        "x": {
+            "rpaid": "rpa1",
+            "desc": "Legacy type RPA-1.0"
         },
-        'RPA-2.0 ': {
-            'rpaid': 'rpa2',
-            'desc': 'Legacy type RPA-2.0'
+        "RPA-2.0 ": {
+            "rpaid": "rpa2",
+            "desc": "Legacy type RPA-2.0"
         },
-        'RPA-3.0 ': {
-            'rpaid': 'rpa3',
-            'desc': 'Standard type RPA-3.0'
+        "RPA-3.0 ": {
+            "rpaid": "rpa3",
+            "desc": "Standard type RPA-3.0"
         },
         # Header ID is the same as rpa3 but double keys are not allowed
-        'RPA-3.0rk': {
-            'rpaid': 'rpa3rk',
-            'alias': 'RPA 3 rk',
-            'desc': 'Custom type of RPA-3.0 with reversed key'
+        "RPA-3.0rk": {
+            "rpaid": "rpa3rk",
+            "alias": "RPA 3 rk",
+            "desc": "Custom type of RPA-3.0 with reversed key"
         },
-        'RPI-3.0': {
-            'rpaid': 'rpa32',
-            'alias': 'rpi3',
-            'desc': 'Custom type RPI-3.0'
+        "RPI-3.0": {
+            "rpaid": "rpa32",
+            "alias": "rpi3",
+            "desc": "Custom type RPI-3.0"
         },
-        'RPA-3.1': {
-            'rpaid': 'rpa3',
-            'alias': 'rpa31',
-            'desc': 'Custom type RPA-3.1, a alias of RPA-3.0'
+        "RPA-3.1": {
+            "rpaid": "rpa3",
+            "alias": "rpa31",
+            "desc": "Custom type RPA-3.1, a alias of RPA-3.0"
         },
-        'RPA-3.2': {
-            'rpaid': 'rpa32',
-            'desc': 'Custom type RPA-3.2'
+        "RPA-3.2": {
+            "rpaid": "rpa32",
+            "desc": "Custom type RPA-3.2"
         },
-        'RPA-4.0': {
-            'rpaid': 'rpa3',
-            'alias': 'rpa4',
-            'desc': 'Custom type RPA-4.0, a alias of RPA-3.0'
+        "RPA-4.0": {
+            "rpaid": "rpa3",
+            "alias": "rpa4",
+            "desc": "Custom type RPA-4.0, a alias of RPA-3.0"
         },
-        'ALT-1.0': {
-            'rpaid': 'alt1',
-            'alias': 'ALT 1',
-            'desc': 'Custom type ALT-1.0'
+        "ALT-1.0": {
+            "rpaid": "alt1",
+            "alias": "ALT 1",
+            "desc": "Custom type ALT-1.0"
         },
-        'ZiX-12A': {
-            'rpaid': 'zix12a',
-            'alias': 'ZIX 12a',
-            'desc': 'Custom type ZiX-12A'
+        "ZiX-12A": {
+            "rpaid": "zix12a",
+            "alias": "ZIX 12a",
+            "desc": "Custom type ZiX-12A"
         },
-        'ZiX-12B': {
-            'rpaid': 'zix12b',
-            'alias': 'ZIX 12b',
-            'desc': 'Custom type ZiX-12B'
+        "ZiX-12B": {
+            "rpaid": "zix12b",
+            "alias": "ZIX 12b",
+            "desc": "Custom type ZiX-12B"
         }
-    }
+    }  # fmt: skip
 
     # TODO: Unify rpaformats and rpaspecs: WIP
 
     rpaspecs = {
-        'rpa1': {
-            'offset': 0,
-            'key': None
+        "rpa1": {
+            "offset": 0,
+            "key": None
         },
-        'rpa2': {
-            'offset': slice(8, None),
-            'key': None
+        "rpa2": {
+            "offset": slice(8, None),
+            "key": None
         },
-        'rpa3': {
-            'offset': slice(8, 24),
-            'key': slice(25, 33),
-            'key_org': 1111638594,
-            'key_rv': slice(None, None, -1)
+        "rpa3": {
+            "offset": slice(8, 24),
+            "key": slice(25, 33),
+            "key_org": 1111638594,
+            "key_rv": slice(None, None, -1)
         },
-        'rpa32': {
-            'offset': slice(8, 24),
-            'key': slice(27, 35)
+        "rpa32": {
+            "offset": slice(8, 24),
+            "key": slice(27, 35)
         },
-        'alt1': {
-            'offset': slice(17, 33),
-            'key': slice(8, 16),
-            'key2': 0xDABE8DF0
+        "alt1": {
+            "offset": slice(17, 33),
+            "key": slice(8, 16),
+            "key2": 0xDABE8DF0
         }
-    }
+    }  # fmt: skip
 
     log = None
 
@@ -601,8 +610,8 @@ class RkDepotWork(RkCommon):
         self.version = {}
         self.reg = {}
         self.dep_initstate = None
-        RkCommon.count['dep_id_found'] = 0  # IDEA: store instead of this ids?
-        # RkCommon.count['dep_id_found'].clear()
+        RkCommon.count["dep_id_found"] = 0  # IDEA: Should we store instead RPA IDs?
+        # RkCommon.count["dep_id_found"].clear()
         # self.dep_id_found = []
 
         self.init_depot()
@@ -616,13 +625,13 @@ class RkDepotWork(RkCommon):
     #     self.version.clear()
     #     self.reg.clear()
     #     self.dep_initstate = None
-    #     RkCommon.count['dep_id_found'] = 0
+    #     RkCommon.count["dep_id_found"] = 0
 
     # TODO: Move this down above the calls to it
     def extract_data(self, file_pt, pos_stats):
         """Extracts the archive data to a temporary file."""
-        if self.depot.suffix == '.rpi':
-            self.depot = self.depot.with_suffix('.rpa')
+        if self.depot.suffix == ".rpi":
+            self.depot = self.depot.with_suffix(".rpa")
 
         with self.depot.open('rb') as of:
             if len(self.reg[file_pt]) == 1:
@@ -641,8 +650,9 @@ class RkDepotWork(RkCommon):
     def unscrample_reg(self, key):
         """Unscrambles the archive register."""
         for kv in self.reg:
-            self.reg[kv] = [(offset ^ key, leg ^ key, prefix)
-                            for offset, leg, prefix in self.reg[kv]]
+            self.reg[kv] = [
+                (offset ^ key, leg ^ key, prefix) for offset, leg, prefix in self.reg[kv]
+            ]
 
     def unify_reg(self):
         """
@@ -664,25 +674,28 @@ class RkDepotWork(RkCommon):
         # in the excepts is useful or even reverse the order of both
         offset, key = 0, None
         try:
-            slos, slky = self.version['offset'], self.version['key']
-            if self.version['rpaid'] != 'rpa1':
+            slos, slky = self.version["offset"], self.version["key"]
+            if self.version["rpaid"] != "rpa1":
                 offset = int(self.header[slos], 16)
 
-            if self.version['rpaid'] != 'rpa2':
+            if self.version["rpaid"] != "rpa2":
                 key = int(self.header[slky], 16)
 
-            if self.version['rpaid'] == 'rpa3' and key != self.version['key_org']:
-                slky_b = self.version['key_rv']
+            if self.version["rpaid"] == "rpa3" and key != self.version["key_org"]:
+                slky_b = self.version["key_rv"]
                 key = int(self.header[slky][slky_b], 16)
-                self.version.update(self.rpaformats['RPA-3.0rk'])
+                self.version.update(self.rpaformats["RPA-3.0rk"])
 
         except (LookupError, ValueError) as err:
             print(sys.exc_info())
-            raise (f"{err}: Problem with the format data encountered. Perhaps "
-                   "the RPA is malformed.")
+            raise (
+                f"{err}: Problem with the format data encountered. Perhaps the RPA is malformed."
+            )
         except TypeError as err:
-            raise (f"{err}: Somehow the wrong data types had a meeting in here. "
-                   "They did'n like each other.")
+            raise (
+                f"{err}: A wrong data type was encountered in the RPA header. This is a rather "
+                "peculiar case."
+            )
         return offset, key
 
     def collect_register(self):
@@ -700,15 +713,15 @@ class RkDepotWork(RkCommon):
 
         self.unify_reg()
         if key is not None:
-            if 'key2' in self.version.keys():
-                key = key ^ self.version['key2']
+            if "key2" in self.version.keys():
+                key = key ^ self.version["key2"]
             self.unscrample_reg(key)
 
     def get_version_specs(self):
         """Yields for the given archive version the cipher data."""
         try:
             for key, val in self.rpaspecs.items():
-                if key == self.version['rpaid']:
+                if key == self.version["rpaid"]:
                     self.version.update(val)
                     break
         except KeyError:
@@ -747,29 +760,33 @@ class RkDepotWork(RkCommon):
             for key, val in self.rpaformats.items():
                 if key in magic:
                     self.version.update(val)
-                    RkCommon.count['dep_id_found'] += 1
-                    # RkCommon.count['dep_id_found'].append(val)
+                    RkCommon.count["dep_id_found"] += 1
+                    # RkCommon.count["dep_id_found"].append(val)
                     # self.dep_id_found.append(val)
 
             # NOTE:If no version is found the dict is empty; searching with a key slice
-            # for 'rpaid' excepts a KeyError (better init dict with key?)
-            if 'rpa1' in self.version.values() and self.depot.suffix != '.rpi':
+            # for "rpaid" excepts a KeyError (better init dict with key?)
+            if "rpa1" in self.version.values() and self.depot.suffix != ".rpi":
                 self.version.clear()
             elif not self.version:
                 raise NoRpaOrUnknownWarning(self.depot, self.header)
             # elif len(self.dep_id_found) > 1:
-            elif RkCommon.count['dep_id_found'] > 1:
+            elif RkCommon.count["dep_id_found"] > 1:
                 raise AmbiguousHeaderError(self.version)
-            elif 'zix12a' in self.version.values() or 'zix12b' in self.version.values():
+            elif "zix12a" in self.version.values() or "zix12b" in self.version.values():
                 raise NotImplementedError(
-                    self.log.warning(f"{self.depot!r} is a unsupported format.\nFound "
-                                     f"archive header: > {self._header}"))
+                    self.log.warning(
+                        f"{self.depot!r} is a unsupported format.\nFound "
+                        f"archive header: > {self._header}"
+                    )
+                )
 
         except (NoRpaOrUnknownWarning, NotImplementedError):
             self.dep_initstate = False
         except LookupError as err:
-            raise self.log.error(f"{err} A unknown problem with the archives format "
-                                 "ID occured. Unable to continue.")
+            raise self.log.error(
+                f"{err} A unknown problem with the archives format ID occured. Unable to continue."
+            )
         else:
             self.dep_initstate = True
             self.log.info(f"Found archive format: {self.version['desc']}")
@@ -788,10 +805,11 @@ class RkDepotWork(RkCommon):
         """
         tmp_pt = self.rk_tmp_dir / f_pt
         if tmp_pt.is_dir() or f_pt == "":
-            rand_fn = '0_' + urandom(2).hex() + '.BAD'
+            rand_fn = "0_" + urandom(2).hex() + ".BAD"
             tmp_pt = self.rk_tmp_dir / rand_fn
-            self.log.warning("Possible invalid archive! A filename was replaced with"
-                             f"the new name '{rand_fn}'.")
+            self.log.warning(
+                f"Possible invalid archive! A filename was replaced withthe new name '{rand_fn}'."
+            )
         return tmp_pt
 
     def unpack_depot(self):
@@ -802,7 +820,7 @@ class RkDepotWork(RkCommon):
                 self.make_dirstruct(tmp_path.parent)
 
                 tmp_file_data = self.extract_data(file_pt, pos_stats)
-                report = self.pm(file_num, RkCommon.count['files_total'], file_pt, 'bg_yellow')
+                report = self.pm(file_num, RkCommon.count["files_total"], file_pt, "bg_b_yellow")
                 self.log.info(f"{report}")
 
                 with tmp_path.open('wb') as of:
@@ -813,8 +831,9 @@ class RkDepotWork(RkCommon):
         if self.void_dir(self.rk_tmp_dir):
             self.log.warning("No files from archive unpacked.")
         else:
-            self.log.important(f"Unpacked {RkCommon.count['files_total']} files from archive: "
-                               f"{self.depot!s}")
+            self.log.important(
+                f"Unpacked {RkCommon.count['files_total']} files from archive: {self.depot!s}"
+            )
 
     def list_depot_content(self):
         """Lists the file content of a renpy archive without unpacking."""
@@ -829,21 +848,24 @@ class RkDepotWork(RkCommon):
 
     def test_depot(self):
         """Tests archives for their format type and outputs this."""
-        print(f"For archive > {self.depot.name} the identified version variant is: "
-              f"{self.log.cm('bg_blue')}{self.version['desc']!r}{self.log.cm('reset')}")
+        print(
+            f"For archive > {self.depot.name} the identified version variant is: "
+            f"{self.log.cm('bg_blue')}{self.version['desc']!r}{self.log.cm('reset')}"
+        )
 
     def work_depot(self):
         """Manages the different tasks for the given archives and their content."""
-        if self.task in ['extract', 'simulate']:
+        if self.task in ["extract", "simulate"]:
             self.unpack_depot()
-        elif self.task == 'list':
+        elif self.task == "list":
             self.list_depot_content()
-        elif self.task == 'test':
+        elif self.task == "test":
             self.test_depot()
         else:
             raise ValueError(
                 f"Unknown task requested: {self.task!r}; Choose either: extract, list, "
-                "simulate, test")
+                "simulate, test"
+            )
 
     # TODO: Move this above check_out_pt
     def init_depot(self):
@@ -858,17 +880,19 @@ class RkDepotWork(RkCommon):
                 self.get_version_specs()
                 self.collect_register()
                 self.reg = {str(file_pt): pos_data for file_pt, pos_data in self.reg.items()}
-                RkCommon.count['files_total'] = len(self.reg)
+                RkCommon.count["files_total"] = len(self.reg)
 
-            if 'alias' in self.version.keys():
+            if "alias" in self.version.keys():
                 self.log.important(
-                    f"Unofficial RPA found. Variant name is '{self.version['alias']}'")
+                    f"Unofficial RPA found. Variant name is '{self.version['alias']}'"
+                )
             else:
                 self.log.info("Official RPA found.")
 
         except OSError as err:
             raise RpaKitError(
-                f"{err}: Error while working on archive file >{self.depot}< for initialization.")
+                f"{err}: Error while working on archive file >{self.depot}< for initialization."
+            )
 
 
 def parse_args():
@@ -877,81 +901,89 @@ def parse_args():
     ap = argparse.ArgumentParser(
         description="A application for searching and unpacking RPA files.",
         epilog="Default output dir is set to `{Target}/rpakit_out/`. Change with option -o.",
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30, width=100))
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30, width=100),
+    )
 
     ap.add_argument(
-        'inpath',
-        metavar='Target',
-        action='store',
+        "inpath",
+        metavar="Target",
+        action="store",
         type=str,
-        help='Directory path (to search) OR rpa file path to unpack.')
+        help="Directory path (to search) OR rpa file path to unpack.",
+    )
 
     opts = ap.add_argument_group("Tasks")
     tasks = opts.add_mutually_exclusive_group(required=True)
     tasks.add_argument(
-        '-e',
-        '--extract',
-        dest='task',
-        action='store_const',
-        const='extract',
-        help='Extracts all stored files and dirs from the RPA.')
-
-    tasks.add_argument(
-        '-l',
-        '--list',
-        dest='task',
-        action='store_const',
-        const='list',
-        help='Prints a listing of all stored files.')
-
-    tasks.add_argument(
-        '-t',
-        '--test',
-        dest='task',
-        action='store_const',
-        const='test',
-        help='Verifies if archive(s) are a known RPA format.'
+        "-e",
+        "--extract",
+        dest="task",
+        action="store_const",
+        const="extract",
+        help="Extracts all stored files and dirs from the RPA.",
     )
 
     tasks.add_argument(
-        '-s',
-        '--simulate',
-        dest='task',
-        action='store_const',
-        const='simulate',
-        help='Unpacks all stored files just temporary.')
+        "-l",
+        "--list",
+        dest="task",
+        action="store_const",
+        const="list",
+        help="Prints a listing of all stored files.",
+    )
+
+    tasks.add_argument(
+        "-t",
+        "--test",
+        dest="task",
+        action="store_const",
+        const="test",
+        help="Verifies if archive(s) are a known RPA format.",
+    )
+
+    tasks.add_argument(
+        "-s",
+        "--simulate",
+        dest="task",
+        action="store_const",
+        const="simulate",
+        help="Unpacks all stored files just temporary.",
+    )
 
     ap.add_argument(
-        '-o',
-        '--outdir',
-        action='store',
+        "-o",
+        "--outdir",
+        action="store",
         type=str,
-        help='Extracts to the specified path instead of the default destination.'
+        help="Extracts to the specified path instead of the default destination.",
     )
 
     ap.add_argument(
-        '--overwrite',
-        action='store_true',
-        help='Overwrites outdir and any content if they already exist.')
+        "--overwrite",
+        action="store_true",
+        help="Overwrites outdir and any content if they already exist.",
+    )
 
     ap.add_argument(
-        '--no_log',
-        action='store_false',
-        help='Deactivates the use of a logfile written to the script path.')
+        "--no_log",
+        action="store_false",
+        help="Deactivates the use of a logfile written to the script path.",
+    )
 
     ap.add_argument(
-        '--loglevel',
+        "--loglevel",
         type=str.upper,
-        default='IMPORTANT',
-        choices=['DEBUG', 'INFO', 'IMPORTANT', 'WARNING', 'ERROR', 'CRITICAL'],
-        help='Set minimum log-level for the console. Default is "important"; Use "warning" '
-        'or higher to reduce output',
+        default="IMPORTANT",
+        choices=["DEBUG", "INFO", "IMPORTANT", "WARNING", "ERROR", "CRITICAL"],
+        help="Set minimum log-level for the console. Default is `important`; Use `warning` "
+             "or higher to reduce output",
     )
 
     ap.add_argument(
-        '--version',
-        action='version',
-        version=f"{__title__} {__version__}")
+        "--version",
+        action="version",
+        version=f"{__title__} {__version__}"
+    )
 
     return ap.parse_args()
 
@@ -962,8 +994,9 @@ def main(cfg=None):  # noqa: C901
     delivers the parameters to its init and executes the program from CLI.
     """
     if not sys.version_info[:2] >= (3, 9):
-        raise RuntimeError("Must be executed in Python 3.9 or later.\n"
-                           f"You are running {sys.version}")
+        raise RuntimeError(
+            f"Must be executed in Python 3.9 or later.\nYou are running {sys.version}"
+        )
     if not cfg:
         print("No configuration found, but is required. Termminating.")
         RkPathWork.exit_app(1)
@@ -973,7 +1006,7 @@ def main(cfg=None):  # noqa: C901
     pathlike_inp = Path(cfg.inpath)
 
     try:
-        rklog = RpaKitLog('RK', logfile=cfg.no_log, loglevel=cfg.loglevel.upper())
+        rklog = RpaKitLog("RK", logfile=cfg.no_log, loglevel=cfg.loglevel.upper())
     except Exception:
         raise RpaKitError(f"Logging initialization failed! {traceback.format_exc()}")
 
@@ -988,17 +1021,20 @@ def main(cfg=None):  # noqa: C901
         RkPathWork.exit_app(2)  # TODO: better(?) raise OSError(os.strerror(2))
 
     # Path stuff #
-    rkp = RkPathWork(pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite,
-                     log_instance=rklog)
-    if cfg.task in ['extract', 'simulate']:
+    rkp = RkPathWork(
+        pathlike_inp, cfg.task, outdir=cfg.outdir, overwrite=cfg.overwrite, log_instance=rklog
+    )
+    if cfg.task in ["extract", "simulate"]:
         atexit.register(rkp._dispose)
     dep_lst, rk_tmp_dir, out_pt = rkp.pathworker()
     # FIXME: Should this be here? @end of pathworker
-    RkCommon.count['dep_found'] = len(dep_lst)
+    RkCommon.count["dep_found"] = len(dep_lst)
 
-    if RkCommon.count['dep_found'] > 0:
-        rklog.important(f"Found {RkCommon.count['dep_found']} RPA files to process:\n"
-                        f"{chr(10).join([*map(str, dep_lst)])}")
+    if RkCommon.count["dep_found"] > 0:
+        rklog.important(
+            f"Found {RkCommon.count['dep_found']} RPA files to process:\n"
+            f"{chr(10).join([*map(str, dep_lst)])}"
+        )
     else:
         rklog.warning("No RPA files found. Was the correct path given?")
         rkp.exit_app(1)  # TODO: raise ValueError or custom exception
@@ -1023,15 +1059,15 @@ def main(cfg=None):  # noqa: C901
             continue
 
         rkd.work_depot()
-        RkCommon.count['dep_done'] += 1
+        RkCommon.count["dep_done"] += 1
 
         # FIXME: Causes chaos in the logfile; ANSI codes are written raw
-        report = rkd.pm(RkCommon.count['dep_done'], RkCommon.count['dep_found'], depot)
+        report = rkd.pm(RkCommon.count["dep_done"], RkCommon.count["dep_found"], depot)
         rklog.important(f"{report}")
 
     # Finishing
-    if cfg.task in ['extract', 'simulate']:
-        if cfg.task == 'extract':
+    if cfg.task in ["extract", "simulate"]:
+        if cfg.task == "extract":
             # FIXME: These both have perhaps no buissiness here. @class somewhere
             # Also related to the OSError from the FIXME at the top
             rkp.mv_tmp2outdir()
@@ -1039,17 +1075,20 @@ def main(cfg=None):  # noqa: C901
 
         # done msg
         if RkCommon.count["dep_done"] > 0:
-            if cfg.task == 'extract':
-                rklog.important(f" Completed. We unpacked {RkCommon.count['dep_done']} archive(s).")
+            if cfg.task == "extract":
+                rklog.important(
+                    f" Completed. {RkCommon.count['dep_done']} archive(s) where processed."
+                )
             else:
                 rklog.important(
-                    f"We simulated the unpacking of {RkCommon.count['dep_done']} "
-                    "archive(s).")
+                    f"The unpacking of {RkCommon.count['dep_done']} archive(s) was simulated."
+                )
         else:
             rklog.warning("Oops! No archives where processed...")
 
-    elif cfg.task in ['listing', 'test']:
+    elif cfg.task in ["listing", "test"]:
         rklog.info("Task completed.")
+
 
 if __name__ == '__main__':
     args = parse_args()
