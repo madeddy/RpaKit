@@ -45,7 +45,7 @@ __title__ = 'RPA Kit'
 __license__ = 'Apache 2.0'
 __author__ = 'madeddy'
 __status__ = 'Development'
-__version__ = '0.50.0-alpha'
+__version__ = '0.51.0-alpha'
 __url__ = "https://github.com/madeddy/RpaKit"
 
 import argparse
@@ -53,23 +53,17 @@ import atexit
 import glob
 import logging
 import pickle
+import re
 import shutil
 import sys
 import tempfile
 import traceback
 import zlib
 from copy import copy
+from logging.handlers import TimedRotatingFileHandler
 from os import urandom
 from pathlib import Path
-from time import strftime
 
-tty_colors = True
-if sys.platform.startswith('win32'):
-    try:
-        from colorama import init
-        init(autoreset=True)
-    except ImportError:
-        tty_colors = False
 
 class RpaKitError(Exception):
     """Base class for exceptions in RpaKit."""
@@ -114,6 +108,23 @@ class NoRpaOrUnknownWarning(RpaKitError):
             f"Archive: {self.dep} with header: > {self._header}")
 
 
+class BaseFormatter(logging.Formatter):
+    """
+    A formatter for the file handler that uses a different format
+    for special SESSION level messages.
+    """
+
+    def __init__(self, fmt, fmt_session, datefmt=None, style='{'):
+        super().__init__(datefmt=datefmt, style=style)
+        self.session_fmt = logging.Formatter(fmt_session, datefmt, style)
+        self.default_fmt = logging.Formatter(fmt, datefmt, style)
+
+    def format(self, record):
+        if record.levelno == 60:
+            return self.session_fmt.format(record)
+        return self.default_fmt.format(record)
+
+
 class ColorFormatter(logging.Formatter):
     """
     A subclass of Formatter that colors the level names of log records.
@@ -131,12 +142,27 @@ class ColorFormatter(logging.Formatter):
         'ERROR': '\x1b[1;35m',  # bold, red
         'CRITICAL': '\x1b[30;41m'  # black, red bg
     }
+    ansi_escape = re.compile(r'(\x9b|\x1b\[)[0-?]*[ -\/]*[@-~]')
 
     def format(self, record):
-        color_record = copy(record)
-        seq = self.level_map.get(record.levelname, '\x1b[1;37m')
-        color_record.levelname = f"{seq}{record.levelname}{self.reset}"
-        return super().format(color_record)
+        record_copy = copy(record)
+
+        if record.levelno == 60:
+            # For session msg return immediately and bypass all other logic below.
+            session_fmt = logging.Formatter("[{name}] {message}", style='{')
+            return session_fmt.format(record)
+
+        # Get the ANSI sequence and apply it to the levelname
+        ansi_seq = self.level_map.get(record_copy.levelname, '\x1b[1;37m')
+        new_levelname = f"[{ansi_seq}{record_copy.levelname}{self.reset}]"
+
+        # Calc the length of the raw levelname and padding
+        visible_len = len(self.ansi_escape.sub('', f"[{record_copy.levelname}]"))
+        padding = len(new_levelname) + 11 - visible_len
+
+        # Add the padding to the end of the colored, bracketed levelname
+        record_copy.levelname = f"{new_levelname:<{padding}}"
+        return super().format(record_copy)
 
 
 class RpaKitLog(logging.Logger):
@@ -185,6 +211,8 @@ class RpaKitLog(logging.Logger):
         self.oldwin_tty_colors()
         logging.addLevelName(25, 'IMPORTANT')
         logging.Logger.important = self.important
+        logging.addLevelName(60, 'SESSION')
+        logging.Logger.important = self.session
 
         self.init_streamhandler()
         if logfile:
@@ -205,19 +233,14 @@ class RpaKitLog(logging.Logger):
                 h = windll.kernel32
                 h.SetConsoleMode(h.GetStdHandle(-11), 7)
             except Exception:
-                print("The first try enabling TTY colors per ctypes failed.")
+                print(
+                    "Enabling TTY colors failed. This is not a critical error, but the "
+                    "terminal output will be colorless."
+                )
                 self.tty_colors = False
 
-            if not self.tty_colors:
-                try:
-                    # NOTE: allegedly enables also ANSI colors in Windows 10
-                    from os import system
-                    system('')
-                except Exception:
-                    print("Enabling TTY colors failed. This is not a critical error, but "
-                          "the terminal output will be colorless.")
-                else:
-                    self.tty_colors = True
+            # NOTE: os.system("") allegedly could enable ANSI colors in Win cmd and py2.7. Not
+            # useful this days for win7/8 etc.
 
             RpaKitLog.ansi_colormap.update(
                 (k, '') for k in self.ansi_colormap if not self.tty_colors)
@@ -230,17 +253,26 @@ class RpaKitLog(logging.Logger):
         if self.isEnabledFor(25):
             self._log(25, msg, args, **kwargs)
 
+    def session(self, msg, *args, **kwargs):
+        """
+        Adds a custom logging level 'SESSION' with severity level 60, which is intended to
+        write always.
+        """
+        if self.isEnabledFor(60):
+            self._log(60, msg, args, **kwargs)
+
     def init_streamhandler(self):
         """
         Sets up the basic console handler configuration.
         Adds the console handler always and use custom formatter if tty-colors are available.
         """
-        fmt_cls = ColorFormatter if self.tty_colors else logging.Formatter()
-        fmt = "[{name}][{levelname:>8s}] >> {message}"
+        fmt_cls = ColorFormatter if self.tty_colors else BaseFormatter
+        fmt_default = "[{name}]{levelname} >> {message}"
+        fmt_session = "[{name}] {message}"
 
         ch = logging.StreamHandler()
         ch.setLevel(self.loglevel)
-        ch.setFormatter(fmt_cls(fmt, style='{'))
+        ch.setFormatter(fmt_cls(fmt_default, fmt_session, style='{'))
         self.addHandler(ch)
 
     def init_filehandler(self):
@@ -248,13 +280,17 @@ class RpaKitLog(logging.Logger):
         Sets up the file logger configuration.
         If not disabled in CLI, a logfile in the script path and a file handler is added.
         """
-        # NOTE: filename:lineno should probably at linestart - needs testing
-        fmt = "{asctime} - {name}:{levelname:8s} - {message} - {filename}:{lineno:d}"
-        logfilename = f"unren2_{strftime('%d%m%Y')}.log"
+        log_name = "rpakit.log"
+        log_path = Path(__file__).parent.resolve().joinpath(log_name)
+        fmt_default = "{asctime} {levelname:<9} - {filename}:{lineno:d} - {message}"
+        fmt_session = "{asctime} {message}"
 
-        fh = logging.FileHandler(Path(__file__).parent.resolve().joinpath(logfilename))
+        fh = TimedRotatingFileHandler(log_path, when='midnight', backupCount=10)
+        fh.suffix = '%d.%b%Y'
         fh.setLevel('DEBUG')
-        fh.setFormatter(logging.Formatter(fmt, datefmt='%d.%b%Y %H:%M:%S', style='{'))
+        fh.setFormatter(
+            BaseFormatter(fmt_default, fmt_session, datefmt='%d.%b%Y %H:%M:%S', style='{')
+        )
         self.addHandler(fh)
 
     @classmethod
