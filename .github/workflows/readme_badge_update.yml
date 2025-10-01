@@ -17,14 +17,14 @@ jobs:
       - name: Extract Version
         id: get_version
         run: |
-          VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' rpakit.py)
+          VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' rpakit.py | sed 's/-/--/g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       
       - name: Update README
         env:
           VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          sed -i "/$b_app_version:/c\[b_app_version]: https://img.shields.io/static/v1?label=Version\&message=$VERSION\&color=darkorange" README.md
+          sed -i "/^\[b_app_version\]:/c\[b_app_version]: https://img.shields.io/badge/Version-$VERSION-darkorange?style=flat-square" README.md
       
       - name: Commit Changes
         run: |
