@@ -325,8 +325,8 @@ class RkCommon:
             f"{self.log.cm('reset')}] {object!s:>4}"
         )
 
-    @classmethod
-    def void_dir(cls, dst):
+    @staticmethod
+    def void_dir(dst):
         """Checks if given directory has content."""
         return not any(dst.iterdir())
 
