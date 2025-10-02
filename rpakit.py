@@ -392,11 +392,15 @@ class RkPathWork(RkCommon):
         #  as a workaround the manual way with copy-/removetree must be used
         shutil.copytree(self.rk_tmp_dir, self.out_pt, dirs_exist_ok=True)
 
-    def exit_app(self):
-        self.log.info("Exiting RpaKit.")
+    def exit_app(self, exitcode=0):
+        """Exits the app with given exitcode."""
+        if not exitcode:
+            self.log.info("RpaKit exited successfully.")
+        else:
+            self.log.error("RpaKit terminated because of an error.")
         for i in range(3, -1, -1):
             print(f"{self.log.cm('bg_magenta')}{i}%{self.log.cm('reset')}", end='\r')
-        sys.exit(0)
+        sys.exit(exitcode)
 
     def make_output(self):
         """
@@ -415,7 +419,7 @@ class RkPathWork(RkCommon):
             # self._dispose()
             # FIXME: In library usage this must be prevented to execute or it ends also the
             # parent app
-            self.exit_app()
+            self.exit_app(17)
 
         self.make_dirstruct(self.out_pt)
 
@@ -1037,7 +1041,7 @@ def main(cfg=None):  # noqa: C901
         )
     else:
         rklog.warning("No RPA files found. Was the correct path given?")
-        rkp.exit_app(1)  # TODO: raise ValueError or custom exception
+        rkp.exit_app(2)  # TODO: raise ValueError or custom exception
 
     # Depot stuff #
     while dep_lst:
