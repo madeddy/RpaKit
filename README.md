@@ -93,7 +93,7 @@ Ren'Py project.
 [l_licence]: LICENSE
 
 [b_branch]: https://img.shields.io/badge/Branch-development-darkviolet?style=flat-square&logo=git
-[b_version]: https://img.shields.io/badge/Version-0.51.0--alpha-sandybrown?style=flat-square
+[b_version]: https://img.shields.io/badge/Version-0.52.0--alpha-sandybrown?style=flat-square
 
 <!-- [b_release]: https://img.shields.io/github/v/release/madeddy/RpaKit?style=flat-square
 [l_releases]: https://github.com/madeddy/RpaKit/releases
