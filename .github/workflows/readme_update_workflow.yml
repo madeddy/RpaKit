@@ -1,0 +1,38 @@
+name: Readme badge-update
+
+on:
+  push:
+    branches: ["main", "development"]
+    paths:  ["rpakit.py"]
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Extract Version
+        id: get_version
+        run: |
+          VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' rpakit.py | sed 's/-/--/g')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update README
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          sed -i "/^\[b_version\]:/c\[b_version]: https://img.shields.io/badge/Version-$VERSION-darkorange?style=flat-square" README.md
+
+      - name: Commit Changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add README.md
+
+          # Only commit if there are changes
+          if [[ -n "$(git status --porcelain README.md)" ]]; then
+            git commit -m "Update badges to ${{ steps.get_version.outputs.version }}"
+            git push
+          else
+            echo "No changes to commit"
+          fi
