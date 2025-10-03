@@ -74,5 +74,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # user
-*.log
+*.log.*
 contributing.md
