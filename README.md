@@ -1,23 +1,5 @@
-[![Python Version][b_py]][l_py] [![Ren'Py Version][renpy]][l_renpy] [![License][b_licence]][l_licence] ![App_version][b_app_version] [![hits][b_hits]][l_hits]
-
+[![Python Version][b_py]][l_py] [![Ren'Py Version][b_renpy]][l_renpy] [![License][b_licence]][l_licence] ![Branch][b_branch] ![App_version][b_version] [![hits][b_hits]][l_hits]
 <!--  [![Latest Version][b_release]][l_releases] ![check][b_check_master]  -->
-<!-- Badge links -->
-[b_py]: https://img.shields.io/badge/3.9%2B-3776AB?style=flat-square&logo=python&logoColor=fff&label=Python%20Version&labelColor=3776AB&color=gold
-[l_py]: https://python.org
-[renpy]: https://img.shields.io/badge/Ren'Py-ac6464?logo=renpy&logoColor=fff&style=flat-square
-[l_renpy]: https://renpy.org
-
-[b_licence]: https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square
-[l_licence]: LICENSE
-
-[b_app_version]: https://img.shields.io/badge/RpaKit_0.46.0_alpha-development-orange.svg?style=flat-square
-
-[b_release]: https://img.shields.io/github/v/release/madeddy/RpaKit?style=flat-square
-[l_releases]: https://github.com/madeddy/RpaKit/releases
-[b_check_master]: https://img.shields.io/github/actions/workflow/status/madeddy/RpaKit/python-app.yaml?branch=master&style=flat-square&logo=github&label=Tests:%20master
-
-[b_hits]: https://hits.sh/github.com/madeddy/RpaKit.svg?style=flat-square&label=Access%20Count&color=lightgrey
-[l_hits]: https://hits.sh/github.com/madeddy/RpaKit
 
 # RPA Kit
 RPA Kit is a application for decompressing Ren'Py archives.
@@ -99,3 +81,23 @@ This software was developed with some orientation on [RenPy's](https://github.co
 the work with RPA files.
 Credits for the development of the RenPy archive format belong to the contributors of the
 Ren'Py project.
+
+<!-- Badge links | prefixe: b=badge l=link -->
+[b_py]: https://img.shields.io/badge/Python%20Version-3.9%2B-gold?style=flat-square&logo=python&logoColor=fff&labelColor=3776AB
+[l_py]: https://python.org
+
+[b_renpy]: https://img.shields.io/badge/Ren'Py-ac6464?style=flat-square&logo=renpy&logoColor=fff
+[l_renpy]: https://renpy.org
+
+[b_licence]: https://img.shields.io/github/license/madeddy/RpaKit?label=License&style=flat-square&logo=apache
+[l_licence]: LICENSE
+
+[b_branch]: https://img.shields.io/badge/Branch-development-darkviolet?style=flat-square&logo=git
+[b_version]: https://img.shields.io/badge/Version-0.51.0--alpha-darkorange?style=flat-square
+
+<!-- [b_release]: https://img.shields.io/github/v/release/madeddy/RpaKit?style=flat-square
+[l_releases]: https://github.com/madeddy/RpaKit/releases
+[b_check_master]: https://img.shields.io/github/actions/workflow/status/madeddy/RpaKit/python-app.yaml?branch=master&style=flat-square&logo=github&label=Tests:%20master -->
+
+[b_hits]: https://hits.sh/github.com/madeddy/RpaKit.svg?style=flat-square&label=Access%20Count&color=lightgrey
+[l_hits]: https://hits.sh/github.com/madeddy/RpaKit
