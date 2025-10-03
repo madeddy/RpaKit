@@ -21,7 +21,7 @@ jobs:
         env:
           VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          sed -i "/^\[b_version\]:/c\[b_version]: https://img.shields.io/badge/Version-$VERSION-darkorange?style=flat-square" README.md
+          sed -i "/^\[b_version\]:/c\[b_version]: https://img.shields.io/badge/Version-$VERSION-sandybrown?style=flat-square" README.md
 
       - name: Commit Changes
         run: |
