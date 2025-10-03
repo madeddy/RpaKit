@@ -117,12 +117,17 @@ class BaseFormatter(logging.Formatter):
     for special SESSION level messages.
     """
 
+    ansi_remove = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
     def __init__(self, fmt, fmt_session, datefmt=None, style='{'):
         super().__init__(datefmt=datefmt, style=style)
         self.session_fmt = logging.Formatter(fmt_session, datefmt, style)
         self.default_fmt = logging.Formatter(fmt, datefmt, style)
 
     def format(self, record):
+        # Removes ansi escape sequences from the logfile output from the percentmeter
+        record.msg = self.ansi_remove.sub("", str(record.msg))
+
         if record.levelno == 60:
             return self.session_fmt.format(record)
         return self.default_fmt.format(record)
