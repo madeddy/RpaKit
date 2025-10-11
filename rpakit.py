@@ -448,7 +448,6 @@ class RkPathWork(RkCommon):
                     # TODO: Check if this really a rpa v1 is and not some custom called rpi
                     # If positive we can count it as a v1 depot
                     # NOTE: Now counted in main
-                    # RkCommon.count['dep_found'] -= 1
 
     def traverse(self, inpath):
         """
@@ -480,7 +479,6 @@ class RkPathWork(RkCommon):
         for globitem in self.filter_raw_input():
             for elem in self.traverse(globitem):
                 self.dep_lst.append(elem)
-                # RkCommon.count['dep_found'] += 1
 
             # TODO: Check if this needs to be here or maybe in init or ...?
             self.inp_pt = self.raw_inp.parent if self.raw_inp.is_file() else self.raw_inp
@@ -620,21 +618,7 @@ class RkDepotWork(RkCommon):
         self.reg = {}
         self.dep_initstate = None
         RkCommon.count["dep_id_found"] = 0  # IDEA: Should we store instead RPA IDs?
-        # RkCommon.count["dep_id_found"].clear()
-        # self.dep_id_found = []
-
         self.init_depot()
-
-    # FIXME: This method should be moot if instancing correctly works
-    # def clear_rk_vars(self):
-    #     """This clears some vars. In rare cases nothing is assigned and old values
-    #     from previous depot run are caried over. Weird files will slip in and error.
-    #     """
-    #     self.header = None
-    #     self.version.clear()
-    #     self.reg.clear()
-    #     self.dep_initstate = None
-    #     RkCommon.count["dep_id_found"] = 0
 
     # TODO: Move this down above the calls to it
     def extract_data(self, file_pt, pos_stats):
@@ -711,7 +695,6 @@ class RkDepotWork(RkCommon):
         """
         Collects the depot's register through use of unzip, followed by unpickling.
         Diverse extra steps for some depot formats are also managed from here.
-
         """
 
         # FIXME: make offset and key vars class wide; move this line somewhere else?
@@ -770,8 +753,6 @@ class RkDepotWork(RkCommon):
                 if key in magic:
                     self.version.update(val)
                     RkCommon.count["dep_id_found"] += 1
-                    # RkCommon.count["dep_id_found"].append(val)
-                    # self.dep_id_found.append(val)
 
             # NOTE:If no version is found the dict is empty; searching with a key slice
             # for "rpaid" excepts a KeyError (better init dict with key?)
@@ -779,7 +760,6 @@ class RkDepotWork(RkCommon):
                 self.version.clear()
             elif not self.version:
                 raise NoRpaOrUnknownWarning(self.depot, self.header)
-            # elif len(self.dep_id_found) > 1:
             elif RkCommon.count["dep_id_found"] > 1:
                 raise AmbiguousHeaderError(self.version)
             elif "zix12a" in self.version.values() or "zix12b" in self.version.values():
