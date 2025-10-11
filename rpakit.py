@@ -113,8 +113,9 @@ class NoRpaOrUnknownWarning(RpaKitError):
 
 class BaseFormatter(logging.Formatter):
     """
-    A formatter for the file handler that uses a different format
-    for special SESSION level messages.
+    A very basic formatter for logfile output, which uses a different format for always emitted
+    messages of the custom SESSION level. This class also removes also unwanted ANSI escape
+    sequences from the log record, so it does not pollute the logfile with them.
     """
 
     ansi_remove = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
@@ -135,7 +136,9 @@ class BaseFormatter(logging.Formatter):
 
 class ColorFormatter(logging.Formatter):
     """
-    A subclass of Formatter that colors the level names of log records.
+    A formatter that colors some elements like the level names of log records. This class is the
+    standard formatter for the console handler and falls back to the default formatter, if
+    tty colors are not supported.
 
     Overrides the format method and uses a record copy to avoid altering the original, or
     other handlers emit ANSI escape sequences.
@@ -175,17 +178,21 @@ class ColorFormatter(logging.Formatter):
 
 class RpaKitLog(logging.Logger):
     """
-    This configures and initiates all logging functionality for the module.
+    This class configures and initiates all logging functionality for the module.
 
     Contains a `colorname-to-ANSI` mapping dict which yields escape sequences for colored
     output.
     It adds a streamhandler for console output, including colored output, and a filehandler
     which writes to a logfile. The latter can be disabled by CLI.
 
-      Arguments:
-        Positional: {name} takes `str` for the logger name
-        Keyword: {logfile} takes `bool` to enable or disable the logfile
-        Keyword: {loglevel} takes `str` from choices
+      Parameters
+      ----------
+      name : `str`
+          The name of the logger
+      logfile : `bool`, optional
+          If a logfile is created, by default True
+      loglevel : `str`, optional
+          The loglevel to use, by default "INFO"
     """
 
     ansi_colormap = {
@@ -349,6 +356,19 @@ class RkPathWork(RkCommon):
     default values.
     If input is a dir it searches there for archives, checks and filters them and stores them
     in a list. A archiv file as input skips the search part.
+
+    Parameters
+    ----------
+    raw_inp : `Path`
+        The input path to work with.
+    task : `str`
+        The task to be performed.
+    outdir : `Path`, optional
+        The output directory, by default "rpakit_out"
+    overwrite : `bool`, optional
+        If True, overwrites already existing output files, by default False
+    log_instance : `RpaKitLog`, optional
+        The logger instance, by default None
     """
 
     log = None
@@ -470,8 +490,9 @@ class RkPathWork(RkCommon):
         return retval
 
     def pathworker(self):
-        """This prepairs the given path and output dir. It dicovers if the input
-        is a file or directory and takes the according actions.
+        """
+        This prepairs the given path and output dir. It dicovers if the input is a file or
+        directory and takes the according actions.
         """
         # FIXME: By mistake a restricted path was given and caused a PermissionError in
         # make_output. Needs to be handled or checked beforehand
@@ -496,9 +517,18 @@ class RkPathWork(RkCommon):
 
 class RkDepotWork(RkCommon):
     """
-    The depot class for analyzing, testing and unpacking RPA files. Positional inputs are
-    "depot", "task", "rk_tmp_dir" and "out_pt".
+    The depot class for analyzing, testing and unpacking RPA files.
 
+    Parameters
+    ----------
+    task : str
+        The task to be performed. Options: `extract`, `simulate`, `list`, `test`
+    depot : Path
+        The depot to be worked on
+    rk_tmp_dir : Path
+        The temporary directory for storing intermediate files
+    log_instance : `RpaKitLog`, optional
+        The logger instance, by default None
     """
 
     # IDEA: Alternate for rpaversion dicts; example:
@@ -843,7 +873,11 @@ class RkDepotWork(RkCommon):
         )
 
     def work_depot(self):
-        """Manages the different tasks for the given archives and their content."""
+        """
+        Works on the depot files according to the task specified. The task parameter must
+        be a allowed value or it raises a ValueError.
+        """
+
         if self.task in ["extract", "simulate"]:
             self.unpack_depot()
         elif self.task == "list":
@@ -858,7 +892,11 @@ class RkDepotWork(RkCommon):
 
     # TODO: Move this above check_out_pt
     def init_depot(self):
-        """Initializes and analyzes depot files to a ready state for further operations."""
+        """
+        Initializes a depot to a ready state for further operations. This is done by analyzing
+        the header, finding the version, collecting register information and updating the
+        global counters.
+        """
         try:
             self.get_header()
             self.guess_version()
@@ -979,8 +1017,8 @@ def parse_args():
 
 def main(cfg=None):  # noqa: C901
     """
-    This checks if the minimum required Python version runs, instantiates the class,
-    delivers the parameters to its init and executes the program from CLI.
+    This checks if the minimum required Python version runs, instantiates the classes,
+    delivers the parameters to their init and executes the program flow.
     """
     if not sys.version_info[:2] >= (3, 9):
         raise RuntimeError(
