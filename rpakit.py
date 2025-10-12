@@ -36,7 +36,7 @@ simulating the extraction process is also possible.
 # TODO: Overall tasks:
 # - Kill simulation option! Nobody uses it.
 # - Add option to move rpa after unpacking to a backup dir
-# - Test atexit; remove remaining outcommented code
+# - Test atexit; remove remaining outcommented _dispose code entries
 # - Add functionality to force rpa format version from user input
 # - Rework the order of tasks into clearer steps e.g. prepare -> get depot list -> work depots
 # - Fix the modules codetag tasks
@@ -90,9 +90,8 @@ class AmbiguousHeaderError(RpaKitError):
             "Detection of the archive format failed, because multiple matches where found.\n"
             f"Archive: {self.dep} with Version > {self.ver}"
         )
-        # NOTE: When the option to force the RPA version implemented is, we need to add another
-        # line with info about this
-
+        # NOTE: When forcing the RPA version or manually spec input implemented is, we need to #
+        # add a info to use this options.
 
 class NoRpaOrUnknownWarning(RpaKitError):
     """Warning raised if a archiv format could not identified.
@@ -254,8 +253,8 @@ class RpaKitLog(logging.Logger):
                 )
                 self.tty_colors = False
 
-            # NOTE: os.system("") allegedly could enable ANSI colors in Win cmd and py2.7. Not
-            # useful this days for win7/8 etc.
+            # NOTE: Supposedly, the command `os.system("")` could activate ANSI colors in bat/cmd
+            # and py2.7. Not useful this days for Win7/8, py3, etc.
 
             RpaKitLog.ansi_colormap.update(
                 (k, "") for k in self.ansi_colormap if not self.tty_colors
@@ -409,7 +408,6 @@ class RkPathWork(RkCommon):
 
     def mv_tmp2outdir(self):
         """Copys all unpacked content from temporary dir to the output dir."""
-        # FIXME: move() errors if a src dir exists in dst if --overwrite option is used
         if self.void_dir(self.rk_tmp_dir):
             self.log.error(
                 "The temporary directory is empty. For unknown reasons was apparently nothing "
@@ -474,7 +472,6 @@ class RkPathWork(RkCommon):
                     self.dep_lst.remove(twin)
                     # TODO: Check if this really a rpa v1 is and not some custom called rpi
                     # If positive we can count it as a v1 depot
-                    # NOTE: Now counted in main
 
     def traverse(self, inpath):
         """
@@ -657,7 +654,7 @@ class RkDepotWork(RkCommon):
         RkCommon.count["dep_id_found"] = 0  # IDEA: Should we store instead RPA IDs?
         self.init_depot()
 
-    # TODO: Move this down above the calls to it
+
     def extract_data(self, file_pt, pos_stats):
         """Extracts the archive data to a temporary file."""
         if self.depot.suffix == ".rpi":
@@ -897,7 +894,7 @@ class RkDepotWork(RkCommon):
                 "simulate, test"
             )
 
-    # TODO: Move this above check_out_pt
+
     def init_depot(self):
         """
         Initializes a depot to a ready state for further operations. This is done by analyzing
@@ -1051,7 +1048,6 @@ def main(cfg=None):  # noqa: C901
         rklog.info(f"Input is a directory. Searching recursively for RPA in {cfg.inpath}.")
     else:
         rklog.error(f"Could not identify input: {cfg.inpath} Check and retry.")
-        # FIXME: We need to exit here
         RkPathWork.exit_app(2)  # TODO: better(?) raise OSError(os.strerror(2))
 
     # Path stuff #
@@ -1093,9 +1089,10 @@ def main(cfg=None):  # noqa: C901
             continue
 
         rkd.work_depot()
+        # FIXME: This leads sometimes to wrong numbers if some files error while processed;
+        # this is a bug and should be counted in the respective methods
         RkCommon.count["dep_done"] += 1
 
-        # FIXME: Causes chaos in the logfile; ANSI codes are written raw
         report = rkd.pm(RkCommon.count["dep_done"], RkCommon.count["dep_found"], depot)
         rklog.important(f"{report}")
 
