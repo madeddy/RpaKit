@@ -654,26 +654,6 @@ class RkDepotWork(RkCommon):
         RkCommon.count["dep_id_found"] = 0  # IDEA: Should we store instead RPA IDs?
         self.init_depot()
 
-
-    def extract_data(self, file_pt, pos_stats):
-        """Extracts the archive data to a temporary file."""
-        if self.depot.suffix == ".rpi":
-            self.depot = self.depot.with_suffix(".rpa")
-
-        with self.depot.open('rb') as of:
-            if len(self.reg[file_pt]) == 1:
-                offset, leg, prefix = pos_stats[0]
-                of.seek(offset)
-                tmp_file = prefix + of.read(leg - len(prefix))
-            else:
-                part = []
-                for offset, leg, prefix in pos_stats:
-                    of.seek(offset)
-                    part.append(of.read(leg))
-                    tmp_file = prefix.join(part)
-
-        return tmp_file
-
     def unscrample_reg(self, key):
         """Unscrambles the archive register."""
         for kv in self.reg:
@@ -821,6 +801,55 @@ class RkDepotWork(RkCommon):
             of.seek(0)
             self.header = of.readline()
 
+    def init_depot(self):
+        """
+        Initializes a depot to a ready state for further operations. This is done by analyzing
+        the header, finding the version, collecting register information and updating the
+        global counters.
+        """
+        try:
+            self.get_header()
+            self.guess_version()
+
+            if self.dep_initstate is False:
+                self.log.warning(f"Skipping bogus archive: {self.depot!s}")
+            elif self.dep_initstate is True:
+                self.get_version_specs()
+                self.collect_register()
+                self.reg = {str(file_pt): pos_data for file_pt, pos_data in self.reg.items()}
+                RkCommon.count["files_total"] = len(self.reg)
+
+            if "alias" in self.version.keys():
+                self.log.important(
+                    f"Unofficial RPA found. Variant name is '{self.version['alias']}'"
+                )
+            else:
+                self.log.info("Official RPA found.")
+
+        except OSError as err:
+            raise RpaKitError(
+                f"{err}: Error while working on archive file >{self.depot}< for initialization."
+            )
+
+    def extract_data(self, file_pt, pos_stats):
+        """Extracts the archive data to a temporary file."""
+        if self.depot.suffix == ".rpi":
+            self.depot = self.depot.with_suffix(".rpa")
+
+        with self.depot.open('rb') as of:
+            if len(self.reg[file_pt]) == 1:
+                offset, leg, prefix = pos_stats[0]
+                of.seek(offset)
+                tmp_file = prefix + of.read(leg - len(prefix))
+            else:
+                part = []
+                for offset, leg, prefix in pos_stats:
+                    of.seek(offset)
+                    part.append(of.read(leg))
+                    tmp_file = prefix.join(part)
+
+        return tmp_file
+
     def check_out_pt(self, f_pt):
         """
         Checks if output path legit is and if needed renames it. This can happen if objects
@@ -892,37 +921,6 @@ class RkDepotWork(RkCommon):
             raise ValueError(
                 f"Unknown task requested: {self.task!r}; Choose either: extract, list, "
                 "simulate, test"
-            )
-
-
-    def init_depot(self):
-        """
-        Initializes a depot to a ready state for further operations. This is done by analyzing
-        the header, finding the version, collecting register information and updating the
-        global counters.
-        """
-        try:
-            self.get_header()
-            self.guess_version()
-
-            if self.dep_initstate is False:
-                self.log.warning(f"Skipping bogus archive: {self.depot!s}")
-            elif self.dep_initstate is True:
-                self.get_version_specs()
-                self.collect_register()
-                self.reg = {str(file_pt): pos_data for file_pt, pos_data in self.reg.items()}
-                RkCommon.count["files_total"] = len(self.reg)
-
-            if "alias" in self.version.keys():
-                self.log.important(
-                    f"Unofficial RPA found. Variant name is '{self.version['alias']}'"
-                )
-            else:
-                self.log.info("Official RPA found.")
-
-        except OSError as err:
-            raise RpaKitError(
-                f"{err}: Error while working on archive file >{self.depot}< for initialization."
             )
 
 
