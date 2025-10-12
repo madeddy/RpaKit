@@ -410,11 +410,18 @@ class RkPathWork(RkCommon):
     def mv_tmp2outdir(self):
         """Copys all unpacked content from temporary dir to the output dir."""
         # FIXME: move() errors if a src dir exists in dst if --overwrite option is used
+        if self.void_dir(self.rk_tmp_dir):
+            self.log.error(
+                "The temporary directory is empty. For unknown reasons was apparently nothing "
+                "unpacked. Please check the logs for more details."
+            )
+            return
 
         # for entry in self.rk_tmp_dir.iterdir():
         #     shutil.move(entry, self.out_pt)
 
-        #  as a workaround the manual way with copy-/removetree must be used
+        # move() is more complicated, needs more control and checks or it errors. So the
+        # temp workaround consisting of copy-/removetree will now be permanently used
         shutil.copytree(self.rk_tmp_dir, self.out_pt, dirs_exist_ok=True)
 
     def exit_app(self, exitcode=0):
